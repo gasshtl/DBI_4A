@@ -1,0 +1,608 @@
+[
+    {
+      "id": "11-beziehungen",
+      "title": "1:1-Beziehungen implementieren",
+      "icon": "🔑",
+      "category": "implementierung",
+      "kurzdefinition": "Eine 1:1-Beziehung liegt vor, wenn beide max-Werte gleich 1 sind. Jeder Datensatz auf der einen Seite ist höchstens einem Datensatz der anderen Seite zugeordnet. Die technische Umsetzung unterscheidet sich von 1:n in genau einem Punkt: Der FK muss ein UNIQUE-Constraint erhalten.",
+      "pruefungsrelevanz": "Häufigste Fehlerquelle der Testanalyse. Aufgaben 1, 2, 6, 7 drehten sich um NOT NULL/nullable, UNIQUE und FK-Seite. BUGU-typisches Format: Multiple-Choice mit sieben Aussagen, von denen zwei bis drei korrekt sind.",
+      "levels": {
+        "1": [
+          "Eine 1:1-Beziehung erkennt man daran, dass beide max-Werte gleich 1 sind — also (0,1) zu (0,1), (0,1) zu (1,1) oder (1,1) zu (1,1).",
+          "Jede 1:1-Beziehung braucht einen FK mit UNIQUE-Constraint. Ohne UNIQUE ist es keine technisch korrekte 1:1-Beziehung, egal was das ERD sagt. Merksatz: 1:1-Beziehung = FK + UNIQUE. Immer. Ohne Ausnahme.",
+          "Ob der FK NOT NULL ist, hängt davon ab, welche Seite den FK trägt und welchen min-Wert sie hat: min=1 → NOT NULL, min=0 → nullable."
+        ],
+        "2": [
+          "Bei (0,1) zu (1,1) kommt der FK auf die Seite mit (1,1), weil ein Datensatz dieser Tabelle ohne Partner nicht erlaubt ist — der FK ist dort NOT NULL. Beispiel: [Mitarbeiter]---(0,1)---<leitet>---(1,1)---[Restaurant] → FK in Restaurant, NOT NULL, UNIQUE.",
+          "Bei (1,1) zu (1,1) nehmen beide Seiten vollständig teil. Der FK kann auf beiden Seiten liegen und ist auf beiden NOT NULL. Man wählt die semantisch abhängigere Seite.",
+          "Der Grund, die vollständig teilnehmende Seite zu bevorzugen: Wenn der FK nullable sein darf (min=0), kann die Tabelle Datensätze ohne Partnerverweis enthalten — das ist eine häufige Quelle von Inkonsistenzen. Die NOT-NULL-Seite ist die erzwungenermaßen konsistentere Wahl."
+        ],
+        "3": [
+          "Auf Level 3 Fehler in einer vorgegebenen Implementierung erkennen und begründen. Typisches Szenario: Ein CREATE-TABLE-Statement beurteilen — Ist UNIQUE vorhanden? Stimmt NOT NULL mit dem min-Wert überein? Liegt der FK auf der richtigen Seite?",
+          "Variante mit partiellem UNIQUE-Index (SQL Server): Wenn der FK nullable ist, kann ein normales UNIQUE-Constraint problematisch sein, weil manche DBMS NULL=NULL nicht als Duplikat behandeln. SQL Server löst das mit CREATE UNIQUE NONCLUSTERED INDEX ... WHERE column IS NOT NULL. Für die meisten Prüfungsaufgaben genügt das einfache UNIQUE."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Mitarbeiter leitet Restaurant (Aufgabe 7)",
+          "code": "create table Mitarbeiter (\n  MitarbeiterNr  integer  not null primary key\n);\n\ncreate table Restaurant (\n  RestaurantNr   integer  not null primary key\n  -- NOT NULL weil Restaurant vollständig teilnimmt (min=1)\n  -- UNIQUE weil 1:1: jeder Mitarbeiter höchstens ein Restaurant\n, MitarbeiterNr  integer  not null unique references Mitarbeiter\n);",
+          "erklaerung": "FK kommt in Restaurant (vollständige Seite, min=1). NOT NULL + UNIQUE. Der FK zeigt von der abhängigen Seite (Restaurant braucht Leiter) zur unabhängigen Seite."
+        },
+        {
+          "titel": "Angestellter leitet Filiale (happysushi)",
+          "code": "create table Angestellter (\n  SVN     varchar(10)  not null primary key\n);\n\ncreate table Filiale (\n  FilialNr   integer      not null primary key\n, LeiterSVN  varchar(10)  not null unique references Angestellter(SVN)\n);",
+          "erklaerung": "Hätte man den FK in Angestellter gelegt, müsste jeder Angestellte auf eine Filiale verweisen — aber Angestellter hat min=0. Filiale ist die Seite, die den Leiter braucht."
+        }
+      ],
+      "typische_fehler": [
+        "UNIQUE weglassen — die Implementierung ist dann technisch 1:n (Aufgaben 1, 7, 10).",
+        "NOT NULL bei (0,1) setzen — erzwingt min=1, widerspricht der teilweisen Teilnahme (Aufgabe 1, Antwort B).",
+        "FK auf die optionale Seite legen statt auf die vollständig teilnehmende (Aufgabe 7, Antwort E).",
+        "Behaupten, UNIQUE sei nur bei vollständiger Teilnahme nötig — UNIQUE ist bei jeder 1:1-Beziehung nötig (Aufgabe 1, Antwort G)."
+      ],
+      "cheatsheet": "1:1: beide max=1 → FK + UNIQUE (immer!)\nNOT NULL: wenn min der FK-Seite = 1\nnullable: wenn min der FK-Seite = 0\nFK bevorzugt auf vollständig teilnehmende Seite (min=1)\n\nRestaurant(Nr PK, MitarbeiterNr FK NOT NULL UNIQUE)\n\nDie 4 Fallen:\n  1. UNIQUE vergessen → technisch 1:n\n  2. NOT NULL bei min=0 → widerspricht (0,1)\n  3. FK auf falsche Seite\n  4. UNIQUE nur bei NOT NULL → falsch, immer nötig"
+    },
+    {
+      "id": "1n-beziehungen",
+      "title": "1:n-Beziehungen implementieren",
+      "icon": "📂",
+      "category": "implementierung",
+      "kurzdefinition": "Eine 1:n-Beziehung liegt vor, wenn ein max-Wert = 1 und der andere = n ist. Der häufigste Beziehungstyp. Der FK kommt in die Tabelle auf der Seite mit max=1 (die 1-Seite). Es wird kein UNIQUE-Constraint gesetzt, weil mehrere Datensätze dieselbe referenzierte Zeile haben dürfen.",
+      "pruefungsrelevanz": "Aufgaben 2, 6 und das Kino-ERD (Aufgabe 5). Typische Fallen: FK auf die falsche Seite, fälschlich UNIQUE, NOT NULL aus dem falschen min-Wert. Aufgabe 6 (A(1,n)---(0,1)B) ist direkte Vorlage für das BUGU-Multiple-Choice-Format.",
+      "levels": {
+        "1": [
+          "Der FK kommt in die Tabelle auf der Seite mit max=1. Das ist die Tabelle, deren Datensätze höchstens einem Datensatz der anderen Seite zugeordnet sind. Intuitiv: Der FK speichert den Verweis auf den Einen, und dieser Verweis sitzt bei den Vielen.",
+          "Bild: Eine Abteilung hat viele Angestellte. Man kann nicht in jeder Abteilung eine Liste aller Angestelltennummern speichern (eine Spalte nimmt nur einen Wert). Also speichert man bei jedem Angestellten die Abteilungsnummer. FK in Angestellter (n-Seite), nicht in Abteilung (1-Seite).",
+          "Bei 1:n gibt es kein UNIQUE. Würde man UNIQUE auf den FK setzen, könnte jede referenzierte Zeile nur einmal referenziert werden — dann wäre es faktisch 1:1."
+        ],
+        "2": [
+          "Ob der FK NOT NULL oder nullable ist, hängt ausschließlich vom min-Wert der Seite ab, die den FK enthält — nicht vom min-Wert der anderen Seite.",
+          "Kritisches Lernbeispiel (Aufgabe 6): [A]---(1,n)---<ab>---(0,1)---[B]. max_A=n, max_B=1, also ist B die Seite mit max=1 → FK kommt in B. Der min-Wert von B ist 0 → der FK in B darf NULL sein. A hat zwar min=1 und nimmt vollständig teil, aber das ist nicht relevant, weil A den FK nicht enthält.",
+          "Die häufigsten falschen Antworten bei Aufgabe 6 waren: FK kommt in A (falsch, A ist die n-Seite), und FK ist NOT NULL (falsch, weil min_B=0)."
+        ],
+        "3": [
+          "Kette von 1:n-Beziehungen (Kino-ERD): Für jede Beziehung die Seite mit max=1 bestimmen und den FK dort platzieren. Kino-Saal: FK in Saal. Saal-Vorstellung: FK in Vorstellung. Dass Saal selbst abhängig ist, macht den FK zu einem Teil des PKs — ein zusätzlicher Layer, aber die Grundregel bleibt.",
+          "Erkennen, wann UNIQUE bei 1:n fälschlich eingebaut wurde: Wenn ein CREATE-TABLE-Statement einen FK mit UNIQUE hat und das ERD 1:n beschreibt, ist das ein Implementierungsfehler — das DBMS würde die Beziehung auf 1:1 einschränken."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Testbeispiel A(1,n)---ab---(0,1)B (Aufgabe 6)",
+          "code": "-- A(1,n) --- ab --- (0,1) B\n-- max_A=n, max_B=1 → 1:n. FK in B (max=1). min_B=0 → nullable.\n\ncreate table A (\n  A_ID  integer  not null primary key\n);\n\ncreate table B (\n  B_ID  integer  not null primary key\n, A_ID  integer  references A   -- nullable, kein UNIQUE\n);",
+          "erklaerung": "Die drei häufigsten Fehler: FK in A statt B, NOT NULL wegen min_A=1 (falsche Seite!), UNIQUE hinzufügen."
+        },
+        {
+          "titel": "Angestellter gehört zu Abteilung",
+          "code": "create table Abteilung (\n  AbtNr   integer      not null primary key\n);\n\ncreate table Angestellter (\n  SVN     varchar(10)   not null primary key\n, AbtNr   integer       not null references Abteilung\n);",
+          "erklaerung": "max_Angestellter=1, max_Abteilung=n → 1:n. FK in Angestellter, NOT NULL (min=1), kein UNIQUE (mehrere Angestellte pro Abteilung)."
+        }
+      ],
+      "typische_fehler": [
+        "FK auf die falsche Seite (in die max=n-Seite statt max=1-Seite).",
+        "NOT NULL aus dem falschen min-Wert ableiten — den min-Wert der FK-enthaltenden Seite ansehen.",
+        "Fälschlich UNIQUE hinzufügen — schränkt 1:n auf 1:1 ein.",
+        "1:n und m:n verwechseln — bei nur einem max=n ist es 1:n, bei zwei max=n ist es m:n."
+      ],
+      "cheatsheet": "FK in max=1-Seite | KEIN UNIQUE\nNULL: min der FK-SEITE (nicht der anderen!)\n\nA(1,n)---(0,1)B → FK in B, nullable\nFalle: min_A=1 ≠ NOT NULL bei FK in B!\n\nKontrollfrage:\n  Welche Seite hat max=1? → FK dorthin\n  Was ist min dieser Seite? → NOT NULL/nullable"
+    },
+    {
+      "id": "mn-beziehungen",
+      "title": "m:n-Beziehungen implementieren",
+      "icon": "🔀",
+      "category": "implementierung",
+      "kurzdefinition": "Eine m:n-Beziehung liegt vor, wenn beide max-Werte gleich n sind. Da kein einzelner Datensatz mehrere Partner in einer Spalte speichern kann, braucht man eine eigene Zwischentabelle. Ihr PK ist die Kombination der FKs beider Seiten. Beziehungsattribute werden als zusätzliche Spalten gespeichert.",
+      "pruefungsrelevanz": "Schulungsfirma (geeignet-Tabelle) und implizit im Kino-ERD. Typische Fallen: keine Zwischentabelle, PK vergessen oder falsch zusammensetzen, Erstellungsreihenfolge umkehren. Beziehungsattribute wie Stunden oder Menge müssen in die Zwischentabelle.",
+      "levels": {
+        "1": [
+          "m:n-Beziehungen brauchen immer eine eigene Zwischentabelle. Die Tabelle enthält zwei Fremdschlüssel, einen auf jede beteiligte Tabelle, und der Primärschlüssel ist die Kombination dieser beiden FKs.",
+          "Gedankenmodell: Welcher Lieferant liefert welches Teil? Weder beim Lieferanten noch beim Teil kann man eine Liste eintragen — eine Spalte nimmt nur einen Wert. Also erstellt man eine eigene Tabelle für jede Lieferung: 'L1 liefert T1', 'L1 liefert T2', 'L2 liefert T1'. Die Kombination (LNr, TNr) muss eindeutig sein — das ist der zusammengesetzte PK."
+        ],
+        "2": [
+          "Erstellungsreihenfolge: Die Zwischentabelle hängt von beiden anderen Tabellen ab. Beide müssen zuerst existieren. Also: zuerst Tabelle A, dann Tabelle B, dann die Zwischentabelle.",
+          "Beziehungsattribute gehören zur Beziehung selbst, nicht zu den Entitytypen. Im lt-Beispiel ist menge ein Beziehungsattribut: Die Menge ist eine Eigenschaft der konkreten Lieferung, nicht des Lieferanten und nicht des Teils allein. Im logischen Modell: lt(lnr > l, tnr > t, menge).",
+          "Die beiden FKs in der Zwischentabelle sind fast immer NOT NULL, weil eine Verbindungszeile ohne einen der beiden Partner keinen Sinn ergibt. Das ergibt sich aus der Logik des m:n-Typs, nicht aus dem min-Wert des ERDs."
+        ],
+        "3": [
+          "Ternärer Beziehungstyp: drei Entitytypen, Zwischentabelle mit drei FKs, alle zusammen als PK. Beispiel: unterrichtet(KNr > Klasse, SVN > Lehrer, FachKzl > Fach, Stunden).",
+          "Rekursive m:n-Beziehung: Beide FKs verweisen auf dieselbe Tabelle, aber unter verschiedenen Rollen. Beispiel: untersteht(SVN > Angestellter, LeiterSVN > Angestellter). Zwei FKs können auf dieselbe Tabelle zeigen, wenn sie verschiedene Rollen repräsentieren."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Lieferant liefert Teil mit Menge (lt, Unterricht)",
+          "code": "create table l (\n  lnr    varchar(2)   not null primary key\n, lname  varchar(6)   not null\n);\n\ncreate table t (\n  tnr    varchar(2)   not null primary key\n, tname  varchar(8)   not null\n, preis  decimal(4,2) not null\n);\n\ncreate table lt (\n  lnr    varchar(2)  not null references l\n, tnr    varchar(2)  not null references t\n, menge  decimal(4)  not null check(menge > 0)   -- Beziehungsattribut\n, primary key (lnr, tnr)\n);",
+          "erklaerung": "menge ist kein PK-Teil, weil (lnr, tnr) die Lieferbeziehung bereits eindeutig identifiziert. menge beschreibt diese Beziehung."
+        },
+        {
+          "titel": "Person besucht Schule (schulen-Projekt)",
+          "code": "create table besucht (\n  SVN     float    not null references person\n, SchulNr integer  not null references schule\n, Monate  integer  not null\n, Kosten  decimal(5,2) not null check(Kosten >= 0)\n, primary key(SVN, SchulNr)\n);",
+          "erklaerung": "Zwei Beziehungsattribute (Monate, Kosten) gehören zur Verbindung, nicht zum Entitytyp."
+        },
+        {
+          "titel": "Rekursive m:n (untersteht, happysushi)",
+          "code": "create table untersteht (\n  SVN        varchar(10)  not null references Angestellter  -- Untergebener\n, LeiterSVN  varchar(10)  not null references Angestellter  -- Vorgesetzter\n, primary key (SVN, LeiterSVN)\n);",
+          "erklaerung": "Beide FKs zeigen auf dieselbe Tabelle Angestellter, repräsentieren aber verschiedene Rollen."
+        }
+      ],
+      "typische_fehler": [
+        "Einfachen FK statt Zwischentabelle verwenden — strukturell unmöglich, eine Spalte nimmt nur einen Wert.",
+        "Unvollständiger PK: nur einen der beiden FKs als PK setzen. Der PK muss aus beiden zusammengesetzt sein.",
+        "UNIQUE auf einen FK setzen — schränkt m:n faktisch auf 1:n ein.",
+        "Beziehungsattribut fälschlich in einen Entitytyp eintragen — menge gehört in lt, nicht in l oder t."
+      ],
+      "cheatsheet": "Zwischentabelle: FK_A + FK_B (beide NOT NULL)\nPK = (FK_A, FK_B) — kein UNIQUE einzeln\nBeziehungsattribut: extra Spalte, KEIN PK-Teil\n\nReihenfolge: erst A, dann B, dann Zwischentabelle\n\nlt(lnr>l, tnr>t, menge)\ngeeignet(knr>kurs, pnr>referent)\nuntersteht(SVN>Angestellter, LeiterSVN>Angestellter)"
+    },
+    {
+      "id": "abhaengige-entitytypen",
+      "title": "Abhängige Entitytypen",
+      "icon": "🏗️",
+      "category": "implementierung",
+      "kurzdefinition": "Ein abhängiger (schwacher) Entitytyp ist ein Entitytyp, dessen Instanzen nicht eigenständig identifiziert werden können, ohne auf einen starken Entitytyp zu verweisen. Er hat keinen vollständig eigenen PK, sondern einen Teilschlüssel. Erst die Kombination aus FK des starken Entitytyps und Teilschlüssel ergibt einen eindeutigen PK.",
+      "pruefungsrelevanz": "Aufgabe 4 (Kino/Saal/Vorstellung) und Aufgabe 5 (DDL-Umsetzung). Typische Fallen: FK nicht als Teil des PK kennzeichnen, falsche Reihenfolge, (1,1) mit abhängigem Entitytyp verwechseln.",
+      "levels": {
+        "1": [
+          "Zentrales Erkennungsmerkmal: Ist der Fremdschlüssel Teil des Primärschlüssels? Wenn ja, handelt es sich um einen abhängigen Entitytyp. Merksatz: FK im PK = abhängiger Entitytyp. Immer.",
+          "In der DDL wird der FK zuerst notiert (vor dem Teilschlüssel) und der zusammengesetzte PK explizit als primary key (FK, Teilschluessel) definiert.",
+          "Beispiel: Ein Saal hat eine SaalNr, aber SaalNr 3 kann in mehreren Kinos vorkommen. Erst (KinoNr, SaalNr) identifiziert einen Saal eindeutig."
+        ],
+        "2": [
+          "Vier Erkennungsmerkmale, die zusammen auftreten müssen: kein vollständig eigener Schlüssel, FK ist Teil des PKs, vollständige Teilnahme (min=1) an der identifizierenden Beziehung, die Beziehung heißt identifizierend.",
+          "Wichtige Falle: Nur weil ein Entitytyp mit (1,1) teilnimmt, ist er noch kein abhängiger Entitytyp (Aufgabe 4, Antwort G). Beim abhängigen Entitytyp ist der FK Teil des PKs. Bei einem normalen Entitytyp mit (1,1) ist der FK nur ein gewöhnlicher NOT-NULL-Fremdschlüssel ohne PK-Funktion.",
+          "Erstellungsreihenfolge: Der starke Entitytyp muss zuerst erstellt werden, weil der abhängige einen FK auf ihn enthält. Im Kino-Beispiel: erst Kino, dann Saal, dann Vorstellung."
+        ],
+        "3": [
+          "Mehrstufige Abhängigkeit: Vorstellung ist abhängig von Saal, Saal ist abhängig von Kino. Vorstellung erbt den gesamten PK von Saal (KinoNr + SaalNr) als zusammengesetzten FK, plus einen eigenen Teilschlüssel (Beginnzeitpunkt). Das erfordert einen expliziten FOREIGN KEY-Block, weil references Saal allein nicht genügt, wenn der PK aus mehreren Attributen besteht.",
+          "ON DELETE CASCADE ist bei abhängigen Entitytypen semantisch sinnvoll: Wenn ein Kino gelöscht wird, sollten seine Säle ebenfalls gelöscht werden, weil Säle ohne Kino nicht existieren können."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Kino → Saal → Vorstellung (Aufgabe 5)",
+          "code": "create table Kino (\n  KinoNr  integer      not null primary key\n);\n\ncreate table Saal (\n  KinoNr  integer  not null references Kino   -- FK = Teil des PK\n, SaalNr  integer  not null                   -- Teilschlüssel\n, primary key (KinoNr, SaalNr)\n);\n\ncreate table Vorstellung (\n  KinoNr           integer   not null\n, SaalNr           integer   not null\n, Beginnzeitpunkt  datetime  not null\n, primary key (KinoNr, SaalNr, Beginnzeitpunkt)\n, foreign key (KinoNr, SaalNr) references Saal(KinoNr, SaalNr)\n);",
+          "erklaerung": "Zwei Stufen Abhängigkeit. Reihenfolge zwingend. Zusammengesetzter FK braucht expliziten FOREIGN KEY-Block."
+        },
+        {
+          "titel": "Filiale → Tisch (happysushi)",
+          "code": "create table Tisch (\n  FilialNr  integer  not null references Filiale   -- FK = Teil des PK\n, TischNr   integer  not null                      -- Teilschlüssel\n, Plaetze   integer  not null\n, primary key (FilialNr, TischNr)\n);",
+          "erklaerung": "TischNr 1 gibt es in jeder Filiale. Erst (FilialNr, TischNr) identifiziert einen Tisch eindeutig. BUGU-Kommentar: FK steht zuerst und ist Teil des PK."
+        },
+        {
+          "titel": "Gebäude → Raum (Aufgabe 4)",
+          "code": "create table Raum (\n  GebaeudNr  integer  not null references Gebaeude   -- FK = Teil des PK\n, RaumNr     integer  not null                       -- Teilschlüssel\n, primary key (GebaeudNr, RaumNr)\n);",
+          "erklaerung": "Raum 101 kann in mehreren Gebäuden vorkommen. Erst (GebaeudNr, RaumNr) ist eindeutig."
+        }
+      ],
+      "typische_fehler": [
+        "FK nicht als Teil des PK kennzeichnen — dann entsteht eine gewöhnliche 1:n-Beziehung statt einer identifizierenden.",
+        "Falsche Reihenfolge: abhängigen Entitytyp vor dem starken erstellen.",
+        "(1,1)-Teilnahme mit abhängigem Entitytyp verwechseln — das richtige Merkmal ist FK im PK (Aufgabe 4, Antwort G).",
+        "Zusammengesetzten FK bei mehrstufiger Abhängigkeit vergessen — references Saal allein genügt nicht."
+      ],
+      "cheatsheet": "FK im PK → abhängiger Entitytyp\n(1,1) allein → NICHT ausreichend!\n\n4 Merkmale (alle nötig):\n  1. Kein vollständiger eigener Schlüssel\n  2. FK = Teil des PK\n  3. Vollständige Teilnahme (min=1)\n  4. Identifizierende Beziehung\n\nFK zuerst in Spaltenreihenfolge\nMehrstufig: FOREIGN KEY (FK1,FK2) REFERENCES T(FK1,FK2)"
+    },
+    {
+      "id": "mehrwertige-beziehungen",
+      "title": "Mehrwertige Beziehungstypen",
+      "icon": "🔧",
+      "category": "implementierung",
+      "kurzdefinition": "Ein mehrwertiger (ternärer) Beziehungstyp verbindet drei oder mehr Entitytypen gleichzeitig in einer einzigen Beziehung, bei der alle gemeinsam nötig sind. In der Umsetzung entsteht immer eine eigene Tabelle, deren PK aus den FKs aller beteiligten Entitytypen besteht. Das Maximum ist immer n.",
+      "pruefungsrelevanz": "Steht explizit auf der Themenliste, behandelt an unterrichtet(Klasse, Lehrer, Fach, Stunden). Typische Fallen: drei Entitytypen nicht erkennen, PK unvollständig aus nur zwei statt drei FKs, Beziehungsattribute falsch platzieren.",
+      "levels": {
+        "1": [
+          "Ein mehrwertiger Beziehungstyp liegt vor, wenn eine Aussage über die Realität nicht vollständig beschrieben werden kann, ohne alle beteiligten Entitytypen gleichzeitig zu nennen. Prüffrage: Würde das Weglassen eines Entitytyps die Aussage unvollständig machen?",
+          "Tabellenstruktur: eine Tabelle mit einem FK auf jeden beteiligten Entitytyp, der PK ist die Kombination aller dieser FKs. Beziehungsattribute kommen als zusätzliche Spalten hinzu."
+        ],
+        "2": [
+          "Der wichtigste Unterschied zu einer gewöhnlichen m:n-Tabelle: Der PK besteht aus drei (oder mehr) FKs. Man schreibt primary key (KNr, SVN, FachKzl) und nicht primary key (KNr, SVN). Nur zwei der drei FKs in den PK aufzunehmen ist einer der häufigsten Fehler.",
+          "Beziehungsattribute wie Stunden gehören zur Beziehung, nicht zu einem der Entitytypen. Die Stundenanzahl, die ein Lehrer für eine Klasse in einem Fach aufwendet, ist eine Eigenschaft der konkreten Kombination (Klasse, Lehrer, Fach) — sie ändert sich, wenn sich eine Komponente ändert.",
+          "Erstellungsreihenfolge: erst die unabhängigen Entitytypen (Klasse, Lehrer, Fach), dann die Beziehungstabelle, die von allen abhängt."
+        ],
+        "3": [
+          "Unterschied zwischen ternärem Beziehungstyp und drei separaten binären Beziehungen erklären: Bei einem ternären Beziehungstyp ist die Kombination aller drei Entitytypen das Sinntragende. Drei binäre Beziehungen — 'Lehrer unterrichtet Klasse', 'Lehrer lehrt Fach', 'Klasse hat Fach' — drücken zusammen NICHT dasselbe aus, weil die Kombination aus allen dreien fehlt.",
+          "Frage nach dem PK: Wenn ein Lehrer ein Fach in verschiedenen Klassen mit verschiedenen Stundenzahlen unterrichten kann, dann ist (Klasse, Lehrer, Fach) der minimal eindeutige Schlüssel."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "unterrichtet (Klasse × Lehrer × Fach)",
+          "code": "create table unterrichtet (\n  KNr     integer     not null references Klasse\n, SVN     varchar(10) not null references Lehrer\n, FachKzl varchar(8)  not null references Fach\n, Stunden integer     not null   -- Beziehungsattribut\n, primary key (KNr, SVN, FachKzl)   -- ALLE drei FKs!\n);",
+          "erklaerung": "Stunden ist kein PK-Teil, weil (Klasse, Lehrer, Fach) die Verbindung bereits eindeutig identifiziert. Stunden beschreibt, wie intensiv die Verbindung ist."
+        },
+        {
+          "titel": "liefert (Lieferant × Projekt × Teil)",
+          "code": "create table liefert (\n  LNr   varchar(2)  not null references Lieferant\n, PNr   integer     not null references Projekt\n, TNr   varchar(2)  not null references Teil\n, Menge decimal(4)  not null check(Menge > 0)\n, primary key (LNr, PNr, TNr)\n);",
+          "erklaerung": "Alle drei Entitytypen müssen gemeinsam präsent sein, um eine konkrete Lieferung zu beschreiben."
+        }
+      ],
+      "typische_fehler": [
+        "Unvollständiger PK: nur zwei der drei FKs in den PK aufnehmen — verletzt die Eindeutigkeit.",
+        "In binäre Beziehungen aufteilen — die Dreier-Kombination geht verloren.",
+        "Beziehungsattribut falsch platzieren — Stunden gehört in unterrichtet, nicht in Lehrer.",
+        "Falsche Erstellungsreihenfolge — erst alle Entitytypen, dann die Beziehungstabelle."
+      ],
+      "cheatsheet": "3+ Entitytypen → immer eigene Tabelle\nMax ist immer n auf allen Seiten\nPK = ALLE FKs zusammen (nicht nur zwei!)\nBeziehungsattribute: extra Spalten, KEIN PK-Teil\n\nunterrichtet(KNr>Klasse, SVN>Lehrer, FachKzl>Fach, Stunden)\nPK: (KNr, SVN, FachKzl)"
+    },
+    {
+      "id": "unterabfragen",
+      "title": "Unterabfragen",
+      "icon": "🔎",
+      "category": "sql",
+      "kurzdefinition": "Eine Unterabfrage (Subquery) ist ein SELECT-Statement innerhalb eines anderen SQL-Statements. Die innere Abfrage wird zuerst ausgeführt, ihr Ergebnis nutzt die äußere. Eine Unterabfrage muss immer in runden Klammern stehen. Sie kann in WHERE, SELECT und FROM auftreten.",
+      "pruefungsrelevanz": "Aufgaben 9, 11, 12. Typische Formate: fehlerhafte Unterabfrage analysieren, korrekte Variante schreiben (MAX, ALL, SOME), korrelierte vs. nicht korrelierte unterscheiden.",
+      "levels": {
+        "1": [
+          "Eine Unterabfrage steht immer in runden Klammern. Wenn ein Vergleichsoperator wie =, > oder < verwendet wird, muss die Unterabfrage genau einen Wert zurückgeben. Gibt sie mehrere Werte zurück, entsteht ein Laufzeitfehler.",
+          "Mit MAX() oder MIN() in der Unterabfrage kann man sicherstellen, dass nur ein einziger Wert zurückkommt.",
+          "Das klassische Fehlerbeispiel (Aufgabe 9): WHERE preis > (SELECT preis FROM t WHERE farbe='rot') schlägt fehl, wenn es mehrere rote Teile gibt, weil > einen einzelnen Vergleichswert erwartet."
+        ],
+        "2": [
+          "IN prüft, ob ein Wert in der Ergebnismenge der Unterabfrage enthalten ist — die Unterabfrage darf mehrere Zeilen liefern.",
+          "EXISTS prüft, ob die Unterabfrage mindestens eine Zeile zurückgibt — der Inhalt ist irrelevant, nur die Existenz zählt. EXISTS ist fast immer korreliert.",
+          "ALL und SOME/ANY erlauben Vergleiche mit einer Menge: > ALL bedeutet größer als alle (= > MAX), > SOME bedeutet größer als mindestens einen (= > MIN). SOME und ANY sind Synonyme. Der Unterschied zwischen ALL und SOME war eine direkte Testfrage (Aufgabe 9)."
+        ],
+        "3": [
+          "Korrelierte Unterabfrage: greift auf einen Wert aus der äußeren Abfrage zu, wird für jede Zeile der äußeren Abfrage neu ausgeführt. Erkennungsmerkmal: ein Spaltenname aus der äußeren Tabelle. Nicht korreliert: unabhängig, einmalig ausführbar.",
+          "Unterabfrage in SELECT: liefert für jede Zeile einen berechneten Wert, ist immer korreliert und muss genau einen Wert liefern. Unterabfrage in FROM (Inline-View): wird wie eine temporäre Tabelle behandelt und braucht einen Aliasnamen — nicht prüfungskritisch für den 28.05."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Fehlerhaft und korrigiert (Aufgabe 9)",
+          "code": "-- Schlägt fehl: mehrere rote Teile (12, 14, 19)\nselect * from t\n where preis > (select preis from t where farbe = 'rot');\n\n-- Korrekt mit MAX:\nselect * from t\n where preis > (select max(preis) from t where farbe = 'rot');\n\n-- Korrekt mit ALL:\nselect * from t\n where preis > all (select preis from t where farbe = 'rot');",
+          "erklaerung": "> erwartet einen Wert, die Unterabfrage liefert drei. MAX reduziert auf einen Wert, ALL erlaubt den Mengenvergleich."
+        },
+        {
+          "titel": "Lieferanten, die T1 und T2 liefern (Aufgabe 12)",
+          "code": "-- Falsch: tnr kann nicht gleichzeitig T1 und T2 sein\nselect lnr from lt where tnr = 'T1' and tnr = 'T2';  -- immer leer!\n\n-- Korrekt: zwei separate Unterabfragen\nselect lnr, lname from l\n where lnr in (select lnr from lt where tnr = 'T1')\n   and lnr in (select lnr from lt where tnr = 'T2');",
+          "erklaerung": "Eine Zeile kann nicht gleichzeitig zwei verschiedene Werte in derselben Spalte haben."
+        },
+        {
+          "titel": "Unterabfrage in SELECT (korreliert)",
+          "code": "select lnr, lname\n     , (select count(*) from lt where lt.lnr = l.lnr) \"#lieferungen\"\n  from l;",
+          "erklaerung": "Berechnet pro Lieferant die Anzahl Lieferungen. l.lnr von außen → korreliert."
+        }
+      ],
+      "typische_fehler": [
+        "Klammern vergessen — Unterabfrage ohne runde Klammern ist ungültig.",
+        "Mehrfachwert-Fehler bei Vergleichsoperatoren — Lösung: MAX/MIN oder ALL/SOME/IN.",
+        "T1-und-T2-Denkfehler: tnr='T1' AND tnr='T2' ergibt immer leer.",
+        "ALL und SOME verwechseln — sehr verschiedene Bedeutungen (Aufgabe 9)."
+      ],
+      "cheatsheet": "Unterabfrage: immer in runden Klammern!\n\nBei =, >, <: muss genau 1 Wert liefern\n  Lösung: max(), min()\n\nMengenvergleiche:\n  IN / NOT IN — Wert in Ergebnismenge\n  EXISTS / NOT EXISTS — mind. 1 Zeile vorhanden\n  > ALL (= > MAX) | > SOME (= > MIN)\n\nT1 UND T2: zwei separate IN/EXISTS mit AND\nNIEMALS: tnr='T1' AND tnr='T2' → leer!"
+    },
+    {
+      "id": "korrelierte-unterabfragen",
+      "title": "Korrelierte Unterabfragen",
+      "icon": "🔗",
+      "category": "sql",
+      "kurzdefinition": "Eine korrelierte Unterabfrage verwendet mindestens einen Wert aus der äußeren Abfrage. Die innere Abfrage kann nicht eigenständig ausgeführt werden und wird für jede Zeile der äußeren Abfrage neu ausgeführt. Erkennungsmerkmal: ein Spaltenname mit dem Tabellennamen oder Alias der äußeren Abfrage.",
+      "pruefungsrelevanz": "Aufgabe 11. Typisches Format: mehrere Abfragen, von denen man die korrelierte identifizieren muss. Das Erkennungsmerkmal ist immer derselbe Punkt — ob die innere Abfrage auf einen Wert der äußeren verweist.",
+      "levels": {
+        "1": [
+          "Eine Unterabfrage ist korreliert, wenn die innere Abfrage einen Wert aus der äußeren Abfrage verwendet. In der Praxis: Die innere Abfrage enthält eine Spalte mit einem Alias oder Tabellennamen aus der äußeren FROM-Klausel.",
+          "Der Gegenbegriff ist die nicht korrelierte Unterabfrage: vollständig unabhängig von der äußeren Abfrage, könnte als eigenständiges Statement ausgeführt werden.",
+          "Der entscheidende Test: Kopiere die innere Abfrage und führe sie alleine aus. Läuft sie ohne Fehler → nicht korreliert. Wirft sie einen Fehler (unbekannte Spalte l.lnr) → korreliert."
+        ],
+        "2": [
+          "Ausführungsreihenfolge: Bei einer korrelierten Unterabfrage nimmt die Datenmaschine jede Zeile der äußeren Tabelle, setzt deren Wert in die innere Abfrage ein, führt sie aus und entscheidet, ob die äußere Zeile ins Ergebnis kommt. Das passiert für jede Zeile neu.",
+          "EXISTS und NOT EXISTS sind die typischsten Operatoren bei korrelierten Unterabfragen. EXISTS liefert true, sobald die innere Abfrage mindestens eine Zeile findet. Der Inhalt von SELECT * ist irrelevant.",
+          "Manche Aufgaben lassen sich sowohl korreliert (EXISTS) als auch nicht korreliert (IN) lösen — semantisch äquivalent, unterschiedlich implementiert."
+        ],
+        "3": [
+          "Korrelierte Unterabfrage in SELECT: liefert für jede Ergebniszeile einen berechneten Wert. Beispiel: (select count(*) from untersteht where LeiterSVN = a.SVN) zählt pro Angestelltem die Untergebenen.",
+          "Dieselbe Frage lässt sich oft mit JOIN und GROUP BY lösen, was bei großen Tabellen effizienter sein kann. Beide sind korrekt; die korrelierte Variante ist flexibler, wenn das Ergebnis kein einfaches Aggregat ist."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Korreliert vs. nicht korreliert",
+          "code": "-- NICHT korreliert: innere Abfrage unabhängig\nselect lnr, lname from l\n where lnr in (select lnr from lt);\n\n-- KORRELIERT: lt.lnr = l.lnr, l von außen\nselect lnr, lname from l\n where exists (select * from lt where lt.lnr = l.lnr);",
+          "erklaerung": "Test: Kann die innere Abfrage alleine laufen? Ja → nicht korreliert. Nein → korreliert."
+        },
+        {
+          "titel": "NOT EXISTS für 'hat nie geliefert'",
+          "code": "select lnr, lname from l\n where not exists (\n   select * from lt where lt.lnr = l.lnr\n);",
+          "erklaerung": "Lieferant kommt ins Ergebnis, wenn keine Zeile in lt mit dieser lnr gefunden wird."
+        },
+        {
+          "titel": "T1 UND T2 (korreliert mit AND)",
+          "code": "select l.lnr, l.lname from l\n where exists (select * from lt where lt.lnr = l.lnr and lt.tnr = 'T1')\n   and exists (select * from lt where lt.lnr = l.lnr and lt.tnr = 'T2');",
+          "erklaerung": "Beide EXISTS müssen true liefern: nur Lieferanten, die beide Teile haben."
+        }
+      ],
+      "typische_fehler": [
+        "Korreliert und nicht korreliert verwechseln, nur weil EXISTS verwendet wird — das Merkmal ist der Verweis auf die äußere Abfrage.",
+        "Alias vergessen: Bei gleichen Spaltennamen muss man l.lnr schreiben, sonst bezieht man sich auf die innere Tabelle.",
+        "NOT EXISTS missverstehen — es bedeutet, die Unterabfrage liefert keine Zeile, nicht 'kein NULL-Wert'."
+      ],
+      "cheatsheet": "Korreliert: innere Abfrage läuft NICHT alleine\nNicht korreliert: unabhängig, einmalig\n\nErkennungstest:\n  Kann die innere Abfrage alleine laufen?\n  Ja → nicht korreliert\n  Nein → korreliert (Verweis auf äußere Spalte)\n\nwhere lt.lnr = l.lnr → l von außen → korreliert\nwhere lt.lnr = lt.lnr → alles von lt → nicht korreliert\nEXISTS fast immer korreliert"
+    },
+    {
+      "id": "in-exists",
+      "title": "IN, EXISTS und NOT EXISTS",
+      "icon": "🔍",
+      "category": "sql",
+      "kurzdefinition": "IN, EXISTS und NOT EXISTS sind Operatoren für Mengenvergleiche und Existenzprüfungen in Unterabfragen. IN prüft, ob ein Wert in einer Ergebnismenge enthalten ist. EXISTS prüft, ob eine Unterabfrage mindestens eine Zeile zurückgibt. NOT EXISTS prüft, ob sie keine Zeile zurückgibt. IN vergleicht Werte, EXISTS prüft nur Existenz.",
+      "pruefungsrelevanz": "Aufgaben 11 und 12. Typische Formate: Lieferanten finden, die ein Teil liefern (IN/EXISTS), die zwei Teile liefern (doppeltes IN/EXISTS), die ein Teil nicht liefern (NOT IN/NOT EXISTS). Aufgabe 12 mit dem T1-und-T2-Denkfehler ist die häufigste Falle.",
+      "levels": {
+        "1": [
+          "IN prüft, ob ein Wert in einer Menge vorkommt — die Unterabfrage darf mehrere Zeilen liefern. EXISTS prüft nur, ob die Unterabfrage überhaupt etwas findet — der Inhalt ist egal.",
+          "Eine einzelne Zeile kann in einer Spalte nicht gleichzeitig zwei verschiedene Werte haben. Der klassische Denkfehler: WHERE tnr='T1' AND tnr='T2' ist immer leer, weil tnr für eine Zeile nicht gleichzeitig T1 und T2 sein kann. Das DBMS gibt keinen Fehler aus — die Abfrage läuft, aber das Ergebnis ist immer leer."
+        ],
+        "2": [
+          "IN — Mengenvergleich: nimmt das Ergebnis der Unterabfrage als Menge und prüft, ob der Wert darin enthalten ist. Typischerweise nicht korreliert.",
+          "EXISTS — Existenzprüfung: prüft, ob die innere Abfrage mindestens eine Zeile findet. SELECT * ist irrelevant. Fast immer korreliert.",
+          "NOT EXISTS — Nicht-Existenzprüfung: liefert true, wenn die innere Abfrage keine Zeile findet. Das Werkzeug für 'hat nie' oder 'liefert nicht'-Fragen.",
+          "Die korrekte Lösung für T1 UND T2: zwei separate Unterabfragen mit AND verknüpfen."
+        ],
+        "3": [
+          "Unterschied NOT IN und NOT EXISTS bei NULL-Werten: NOT IN kann unerwartete Ergebnisse liefern, wenn die Ergebnismenge einen NULL-Wert enthält. Grund: jeder Vergleich mit NULL ergibt UNKNOWN. Bei {L1, L2, NULL} prüft NOT IN: x <> L1 AND x <> L2 AND x <> NULL. Der letzte Teil ist immer UNKNOWN, und TRUE AND UNKNOWN = UNKNOWN — kein Datensatz kommt ins Ergebnis.",
+          "NOT EXISTS hat dieses Problem nicht, weil es nur Existenz prüft, ohne Wertvergleiche mit NULL. Bei NOT-Abfragen mit nullable FKs sollte man NOT EXISTS gegenüber NOT IN bevorzugen."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "IN: Lieferanten, die T1 liefern",
+          "code": "select lnr, lname from l\n where lnr in (select lnr from lt where tnr = 'T1');",
+          "erklaerung": "Innere Abfrage liefert alle lnr mit tnr='T1'. Äußere nimmt nur Lieferanten, deren lnr darin vorkommt."
+        },
+        {
+          "titel": "Der Denkfehler und die korrekte Lösung (Aufgabe 12)",
+          "code": "-- FALSCH: immer leer\nselect lnr from lt where tnr = 'T1' and tnr = 'T2';\n\n-- KORREKT mit IN:\nselect lnr, lname from l\n where lnr in (select lnr from lt where tnr = 'T1')\n   and lnr in (select lnr from lt where tnr = 'T2');\n\n-- KORREKT mit EXISTS:\nselect l.lnr, l.lname from l\n where exists (select * from lt where lt.lnr = l.lnr and lt.tnr = 'T1')\n   and exists (select * from lt where lt.lnr = l.lnr and lt.tnr = 'T2');",
+          "erklaerung": "Eine Zeile hat eine tnr-Spalte mit EINEM Wert. Dieselbe Zeile kann nicht T1 und T2 sein."
+        },
+        {
+          "titel": "NOT EXISTS: Lieferanten ohne jede Lieferung",
+          "code": "select lnr, lname from l\n where not exists (select * from lt where lt.lnr = l.lnr);",
+          "erklaerung": "Lieferant kommt ins Ergebnis, wenn lt keine Zeile mit dieser lnr enthält."
+        }
+      ],
+      "typische_fehler": [
+        "T1-und-T2-Denkfehler: tnr='T1' AND tnr='T2' ergibt immer leer.",
+        "IN und EXISTS bezüglich Korrelation verwechseln — IN meist nicht korreliert, EXISTS muss korreliert sein.",
+        "Korrelationsverweis bei EXISTS vergessen — ohne lt.lnr = l.lnr werden alle Lieferanten zurückgegeben.",
+        "NULL-Problem bei NOT IN — sichere Alternative ist NOT EXISTS."
+      ],
+      "cheatsheet": "tnr='T1' AND tnr='T2' → IMMER LEER!\nT1 UND T2: lnr IN(...T1) AND lnr IN(...T2)\n\nIN: Wert in Menge | NOT IN: Vorsicht bei NULL!\nEXISTS: mind. 1 Zeile, korreliert\nNOT EXISTS: keine Zeile, sicher bei NULL\n\nEXISTS braucht Korrelationsverweis (lt.lnr=l.lnr)!"
+    },
+    {
+      "id": "all-some-any",
+      "title": "ANY, SOME und ALL",
+      "icon": "⚖️",
+      "category": "sql",
+      "kurzdefinition": "ALL, SOME und ANY vergleichen einen Wert mit einer Menge von Werten aus einer Unterabfrage. ALL: die Bedingung muss für alle Werte gelten. SOME: für mindestens einen. ANY ist ein exaktes Synonym für SOME. Semantik: > ALL entspricht > MAX, > SOME entspricht > MIN.",
+      "pruefungsrelevanz": "Aufgabe 9. Format: Multiple-Choice mit sieben Aussagen, welche Varianten (MAX, ALL, SOME) korrekte Ergebnisse liefern. Der semantische Unterschied zwischen ALL und SOME ist der kritische Punkt.",
+      "levels": {
+        "1": [
+          "> ALL(...) bedeutet 'größer als jeder Wert in der Menge' — nur Werte, die das Maximum übersteigen, kommen ins Ergebnis. Entspricht > MAX(...).",
+          "> SOME(...) bedeutet 'größer als mindestens einen Wert' — alle Werte, die das Minimum überschreiten, kommen ins Ergebnis. Entspricht > MIN(...). ANY ist Synonym für SOME.",
+          "Praxisbeispiel (Aufgabe 9, rote Preise 12, 14, 19): > ALL liefert Teile teurer als 19 (das Maximum). > SOME liefert Teile teurer als 12 (das Minimum). Der Unterschied ist enorm."
+        ],
+        "2": [
+          "> ALL entspricht > MAX, weil man größer als jeden einzelnen Wert sein muss, also auch größer als den größten. > SOME entspricht > MIN, weil es genügt, größer als den kleinsten zu sein.",
+          "= ANY (gleich irgendeinem Wert) ist äquivalent zu IN. Die Wahl zwischen den Varianten ist eine Stilfrage — mit MAX/MIN ist die Semantik klarer, mit ALL/SOME ist die Abfrage kürzer."
+        ],
+        "3": [
+          "Alle Kombinationen von Vergleichsoperatoren und ALL/SOME interpretieren: < ALL ~ < MIN (kleiner als der kleinste). < SOME ~ < MAX (kleiner als der größte). <> ALL ~ NOT IN (in der Menge gar nicht vorkommen). = SOME ~ IN (mindestens einmal vorkommen).",
+          "Das vollständige Äquivalenzschema: > ALL ~ > MAX, > SOME ~ > MIN, < ALL ~ < MIN, < SOME ~ < MAX, = SOME ~ IN, <> ALL ~ NOT IN."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Testbeispiel (Aufgabe 9)",
+          "code": "-- > ALL: nur Teile teurer als 19 (Maximum der roten Preise)\nselect * from t where preis > all (select preis from t where farbe = 'rot');\n\n-- > SOME: alle Teile teurer als 12 (Minimum der roten Preise)\nselect * from t where preis > some (select preis from t where farbe = 'rot');\n\n-- MAX-Variante (identisch mit ALL):\nselect * from t where preis > (select max(preis) from t where farbe = 'rot');",
+          "erklaerung": "ALL und MAX liefern dasselbe (teurer als 19). SOME liefert viel mehr (teurer als 12)."
+        },
+        {
+          "titel": "< ALL und < SOME im Vergleich",
+          "code": "-- < ALL: Teile billiger als das BILLIGSTE rote Teil (< 12)\nselect * from t where preis < all (select preis from t where farbe = 'rot');\n\n-- < SOME: Teile billiger als das TEUERSTE rote Teil (< 19)\nselect * from t where preis < some (select preis from t where farbe = 'rot');",
+          "erklaerung": "< ALL ~ < MIN, < SOME ~ < MAX. Deutlich verschiedene Ergebnismengen."
+        }
+      ],
+      "typische_fehler": [
+        "ALL und SOME verwechseln — syntaktisch korrekt, aber semantisch völlig anders (Aufgabe 9).",
+        "> ALL als 'größer als irgendeinen' verstehen — das ist > SOME. > ALL ist strenger.",
+        "ANY und ALL für synonym halten — ANY ist Synonym für SOME, nicht für ALL.",
+        "Vergessen, dass ALL/SOME auch mit <, =, <> funktionieren, nicht nur mit >."
+      ],
+      "cheatsheet": "> ALL → größer als ALLE → > MAX\n> SOME → größer als mind. 1 → > MIN\n> ANY → Synonym für > SOME → > MIN\n< ALL → < MIN | < SOME → < MAX\n= SOME → IN | <> ALL → NOT IN\n\nMerkhilfe:\n  ALL → alle müssen stimmen → Maximum ist die Hürde\n  SOME → einer reicht → Minimum ist die Hürde\n\nRote Preise (12,14,19): >ALL→>19, >SOME→>12"
+    },
+    {
+      "id": "outer-join",
+      "title": "OUTER JOIN",
+      "icon": "↔️",
+      "category": "sql",
+      "kurzdefinition": "Ein OUTER JOIN behält Zeilen einer Tabelle im Ergebnis, auch wenn keine passende Zeile in der anderen existiert. Fehlende Treffer werden mit NULL aufgefüllt. LEFT JOIN behält alle Zeilen der linken Tabelle. INNER JOIN liefert nur Zeilen mit Treffer auf beiden Seiten.",
+      "pruefungsrelevanz": "Steht auf der Prüfungsliste. Typische Aufgaben: alle Datensätze anzeigen, auch ohne Verbindung; fehlende Verknüpfungen über WHERE rechte_Spalte IS NULL finden. count(*) vs. count(Spalte) ist eine häufige Falle.",
+      "levels": {
+        "1": [
+          "LEFT JOIN behält alle Zeilen der linken Tabelle, auch wenn rechts nichts passt. Wo rechts kein Treffer ist, stehen NULL-Werte. INNER JOIN lässt Zeilen ohne Treffer weg — nur Zeilen mit Partner auf beiden Seiten kommen ins Ergebnis.",
+          "Das Muster für 'hat keinen Partner' ist LEFT JOIN kombiniert mit WHERE rechte_Schlüsselspalte IS NULL. Wer auf IS NULL filtert, bekommt nur die Zeilen, die keinen Treffer auf der rechten Seite hatten."
+        ],
+        "2": [
+          "Ein INNER JOIN auf l und lt liefert nur Lieferanten, die mindestens ein Teil geliefert haben. Lieferanten ohne Lieferungen sind unsichtbar — bei einer Aufgabe wie 'zeige alle Lieferanten' wäre das falsch. Der LEFT JOIN macht diese Lieferanten sichtbar, mit NULL-Werten für alle lt-Spalten.",
+          "IS NULL-Muster: Man filtert auf die Schlüsselspalte der rechten Tabelle (z. B. lt.tnr), nicht auf eine beliebige Spalte. Diese Spalte ist bei fehlenden Treffern NULL.",
+          "RIGHT JOIN ist das Spiegelbild: alle Zeilen der rechten Tabelle bleiben erhalten. Im Unterricht erwähnt, kaum mit Aufgaben belegt. In der Praxis ersetzt man ihn durch einen umgedrehten LEFT JOIN."
+        ],
+        "3": [
+          "LEFT JOIN + IS NULL, NOT EXISTS und NOT IN sind drei äquivalente Wege für 'hat keinen Partner'. Bei NULL-Werten in der Unterabfragetabelle sind LEFT JOIN und NOT EXISTS sicher, NOT IN kann ein leeres Ergebnis liefern.",
+          "Aggregierte Werte mit LEFT JOIN: count(lt.tnr) statt count(*). count(*) würde für Lieferanten ohne Lieferungen den Wert 1 liefern (die NULL-Zeile zählt). count(lt.tnr) liefert 0, weil NULL-Werte bei count() mit Spaltenargument nicht gezählt werden."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Alle Lieferanten, auch ohne Lieferungen",
+          "code": "-- INNER JOIN: Lieferanten ohne Lieferungen fehlen\nselect l.lnr, l.lname, lt.tnr from l\n  join lt on l.lnr = lt.lnr;\n\n-- LEFT JOIN: alle Lieferanten, fehlende Daten als NULL\nselect l.lnr, l.lname, lt.tnr from l\n  left join lt on l.lnr = lt.lnr;",
+          "erklaerung": "Beim LEFT JOIN erscheint ein Lieferant ohne Lieferungen mit tnr = NULL."
+        },
+        {
+          "titel": "Teile, die nie geliefert wurden",
+          "code": "select t.tnr, t.tname from t\n  left join lt on t.tnr = lt.tnr\n where lt.tnr is null;",
+          "erklaerung": "IS NULL filtert die Zeilen, bei denen links kein rechter Treffer war."
+        },
+        {
+          "titel": "Anzahl Lieferungen mit 0 für Lieferanten ohne Lieferungen",
+          "code": "select l.lnr, l.lname, count(lt.tnr) \"#lieferungen\"\n  from l\n  left join lt on l.lnr = lt.lnr\n group by l.lnr, l.lname;",
+          "erklaerung": "count(lt.tnr) ignoriert NULL → 0 für Lieferanten ohne Lieferungen. count(*) würde fälschlich 1 liefern."
+        }
+      ],
+      "typische_fehler": [
+        "INNER JOIN statt LEFT JOIN wählen, wenn 'alle Datensätze' verlangt sind.",
+        "Auf die falsche Spalte bei IS NULL filtern — auf die Schlüsselspalte der rechten Tabelle filtern.",
+        "count(*) statt count(Spalte) bei LEFT-JOIN-Aggregationen — count(*) zählt die NULL-Zeile mit (1 statt 0).",
+        "Tabellen beim LEFT JOIN vertauschen — from l left join lt behält l, from lt left join l behält lt."
+      ],
+      "cheatsheet": "LEFT JOIN: alle links + NULL rechts wenn kein Treffer\nINNER JOIN: nur Zeilen MIT Treffer beidseitig\n\nFehlende finden: WHERE rechte_Spalte IS NULL\n\nAggregation:\n  count(rechte_Spalte) → 0 bei kein Treffer\n  count(*) → 1 (falsch!) bei kein Treffer\n\n3 äquivalente Varianten für 'kein Partner':\n  LEFT JOIN + IS NULL (sicher)\n  NOT EXISTS (sicher)\n  NOT IN (Vorsicht bei NULL!)"
+    },
+    {
+      "id": "mengenoperationen",
+      "title": "SQL-Mengenoperationen",
+      "icon": "⚗️",
+      "category": "sql",
+      "kurzdefinition": "Mengenoperationen kombinieren die Ergebnisse zweier SELECT-Statements. UNION = A oder B, Duplikate entfernt. UNION ALL = A oder B, Duplikate bleiben. INTERSECT = nur Zeilen in beiden. EXCEPT = Zeilen aus A, die nicht in B sind (Reihenfolge entscheidend). Voraussetzung: gleiche Spaltenanzahl, kompatible Datentypen.",
+      "pruefungsrelevanz": "UNION, INTERSECT, EXCEPT mit den l/lt-Tabellen. Typische Aufgaben: T1 oder T2, T1 und T2, T1 aber nicht T2. Besonders wichtig: Unterschied UNION/UNION ALL und EXCEPT-Reihenfolge.",
+      "levels": {
+        "1": [
+          "UNION = A oder B, Duplikate entfernt. UNION ALL = A oder B, Duplikate bleiben. INTERSECT = A und B (nur Zeilen in beiden). EXCEPT = A minus B (Reihenfolge wichtig!).",
+          "Voraussetzungen: gleiche Spaltenanzahl und kompatible Datentypen in beiden Abfragen, sonst Syntaxfehler.",
+          "EXCEPT-Reihenfolge: A EXCEPT B liefert Zeilen aus A, die nicht in B sind. B EXCEPT A liefert Zeilen aus B, die nicht in A sind. Das sind verschiedene Ergebnisse!"
+        ],
+        "2": [
+          "UNION vs. UNION ALL: Wenn ein Lieferant sowohl T1 als auch T2 liefert, erscheint er bei UNION nur einmal (Duplikate entfernt), bei UNION ALL zweimal. Für 'Liste aller Lieferanten' ist UNION korrekt.",
+          "INTERSECT als Alternative zu doppeltem IN: Das Ergebnis von INTERSECT auf zwei lnr-Mengen ist äquivalent zur doppelten IN-Lösung.",
+          "Spaltenname im Ergebnis stammt aus der ersten Abfrage. ORDER BY steht nur einmal am Ende der gesamten Mengenoperation, nicht in den Teilabfragen."
+        ],
+        "3": [
+          "EXCEPT vs. NOT EXISTS vs. NOT IN: alle drei lösen 'T1, aber nicht T2'. EXCEPT ist syntaktisch am kompaktesten. NOT EXISTS ist robust bei NULL. NOT IN kann bei NULLs fehlschlagen.",
+          "Voraussetzungsfehler erkennen: SELECT lnr FROM lt UNION SELECT lnr, tnr FROM lt schlägt fehl, weil eine Abfrage eine Spalte hat und die andere zwei."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "T1 ODER T2 (UNION)",
+          "code": "(select lnr from lt where tnr = 'T1')\nunion\n(select lnr from lt where tnr = 'T2')\norder by lnr;",
+          "erklaerung": "UNION entfernt Duplikate — jeder Lieferant erscheint nur einmal. ORDER BY am Ende der gesamten Abfrage."
+        },
+        {
+          "titel": "T1 UND T2 (INTERSECT)",
+          "code": "(select lnr from lt where tnr = 'T1')\nintersect\n(select lnr from lt where tnr = 'T2');",
+          "erklaerung": "Nur Lieferanten, die in beiden Mengen vorkommen. Äquivalent zu doppeltem IN."
+        },
+        {
+          "titel": "T1, aber NICHT T2 (EXCEPT)",
+          "code": "-- A EXCEPT B: T1-Menge minus T2-Menge\n(select lnr from lt where tnr = 'T1')\nexcept\n(select lnr from lt where tnr = 'T2');\n\n-- Reihenfolge vertauscht = anderes Ergebnis!\n(select lnr from lt where tnr = 'T2')\nexcept\n(select lnr from lt where tnr = 'T1');",
+          "erklaerung": "Lieferanten, die beide Teile liefern, werden durch EXCEPT entfernt. Die zweite Variante liefert T2-aber-nicht-T1."
+        }
+      ],
+      "typische_fehler": [
+        "EXCEPT-Reihenfolge vergessen — A EXCEPT B ≠ B EXCEPT A.",
+        "UNION und UNION ALL verwechseln — UNION ALL behält Duplikate.",
+        "Voraussetzungen verletzen — unterschiedliche Spaltenanzahl oder Datentypen.",
+        "ORDER BY falsch platzieren — nur einmal am Ende, nicht in den Teilabfragen."
+      ],
+      "cheatsheet": "UNION: A∪B, Duplikate weg\nUNION ALL: A+B, Duplikate bleiben\nINTERSECT: A∩B\nEXCEPT: A\\B, Reihenfolge wichtig!\n\nT1 ODER T2 → UNION\nT1 UND T2 → INTERSECT\nT1 nicht T2 → EXCEPT\n\nGleiche Spaltenanzahl + Datentypen!\nORDER BY nur einmal am Ende!"
+    },
+    {
+      "id": "null-fallen",
+      "title": "NULL-Fallen in SQL",
+      "icon": "⚠️",
+      "category": "sql",
+      "kurzdefinition": "NULL bedeutet 'unbekannt' oder 'nicht vorhanden' — es ist kein Wert, sondern das Fehlen eines Wertes. NULL ist nicht leer (''), nicht 0 und nicht false. Wichtigster Grundsatz: NULL kann man nicht mit = vergleichen. spalte = NULL ergibt UNKNOWN. Korrekt ist IS NULL bzw. IS NOT NULL.",
+      "pruefungsrelevanz": "Querschnittsthema. Relevant bei NOT IN mit NULL (Aufgabe 9), LEFT JOIN + IS NULL, count(*) vs. count(Spalte). Das DBMS gibt bei NULL-Fehlern oft keinen Syntaxfehler — die Abfrage läuft, liefert aber ein falsches Ergebnis.",
+      "levels": {
+        "1": [
+          "= NULL ist falsch. Der Vergleich spalte = NULL ist syntaktisch erlaubt, gibt aber nie TRUE zurück. Man muss IS NULL verwenden.",
+          "IS NULL und IS NOT NULL sind die einzigen korrekten Wege, auf NULL zu prüfen.",
+          "COUNT(*) zählt alle Zeilen, auch Zeilen mit NULL-Werten. COUNT(Spalte) ignoriert NULL — es zählt nur Zeilen, in denen diese Spalte einen Wert hat."
+        ],
+        "2": [
+          "NULL bei Aggregatfunktionen: Fast alle (SUM, AVG, MAX, MIN, COUNT(Spalte)) ignorieren NULL-Werte. Nur COUNT(*) zählt alle Zeilen. Besonders relevant bei LEFT JOIN, wo fehlende Treffer NULL-Zeilen erzeugen.",
+          "NULL bei NOT IN: Wenn die Ergebnismenge einen NULL-Wert enthält, liefert NOT IN immer ein leeres Ergebnis. Grund: x NOT IN {A, B, NULL} ergibt x<>NULL = UNKNOWN, und TRUE AND UNKNOWN = UNKNOWN. NOT EXISTS hat dieses Problem nicht.",
+          "NULL bei LEFT JOIN: Fehlende Treffer rechts werden mit NULL aufgefüllt. Man erkennt fehlende Verknüpfungen mit WHERE rechte_Spalte IS NULL."
+        ],
+        "3": [
+          "Drei-Werte-Logik: TRUE, FALSE, UNKNOWN. Ein WHERE-Filter lässt nur Zeilen durch, bei denen die Bedingung TRUE ist. UNKNOWN hat denselben Effekt wie FALSE.",
+          "NULL = NULL → UNKNOWN. x = NULL → UNKNOWN. NOT UNKNOWN → UNKNOWN. Deshalb filtert weder WHERE spalte = NULL noch WHERE NOT (spalte = NULL) Zeilen mit NULL durch.",
+          "Zusammenhang NULL und optionale Fremdschlüssel: Wenn ein FK nullable ist (weil der ERD-Entitytyp mit min=0 teilnimmt), können Zeilen ohne Verknüpfung existieren. Diese haben NULL in der FK-Spalte. Bei Abfragen muss man IS NULL verwenden."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "IS NULL vs. = NULL",
+          "code": "-- FALSCH: liefert nie Ergebnisse\nselect * from l where stadt = NULL;\n\n-- KORREKT:\nselect * from l where stadt is null;\nselect * from l where stadt is not null;",
+          "erklaerung": "= NULL ergibt immer UNKNOWN. IS NULL ist der einzige korrekte Weg."
+        },
+        {
+          "titel": "COUNT(*) vs. COUNT(Spalte) bei LEFT JOIN",
+          "code": "select l.lnr, l.lname\n     , count(*)       \"falsch\"\n     , count(lt.tnr)  \"richtig\"\n  from l\n  left join lt on l.lnr = lt.lnr\n group by l.lnr, l.lname;",
+          "erklaerung": "Für L5 ohne Lieferungen: count(*) = 1 (zählt die NULL-Zeile), count(lt.tnr) = 0 (ignoriert NULL)."
+        },
+        {
+          "titel": "NOT IN Falle mit NULL",
+          "code": "-- Wenn lt.lnr einen NULL-Eintrag hat, scheitert NOT IN:\nselect lnr, lname from l\n where lnr not in (select lnr from lt);\n\n-- SICHER:\nselect l.lnr, l.lname from l\n where not exists (select * from lt where lt.lnr = l.lnr);",
+          "erklaerung": "x <> NULL = UNKNOWN → TRUE AND UNKNOWN = UNKNOWN → kein Datensatz. NOT EXISTS umgeht das."
+        }
+      ],
+      "typische_fehler": [
+        "= NULL statt IS NULL — Abfrage läuft, liefert aber immer leer.",
+        "count(*) statt count(Spalte) bei LEFT-JOIN-Aggregationen.",
+        "NULL-Problem bei NOT IN vergessen — sichere Alternative ist NOT EXISTS.",
+        "NULL mit leerem String '' oder 0 verwechseln — alle drei sind verschieden."
+      ],
+      "cheatsheet": "= NULL → IMMER FALSCH | IS NULL → korrekt\nIS NOT NULL statt <> NULL\n\ncount(*) → alle Zeilen inkl. NULL\ncount(Spalte) → ignoriert NULL\nsum/avg/max/min → ignorieren NULL\n\nNOT IN + NULL → leeres Ergebnis (Falle!)\nLEFT JOIN: fehlende Treffer → NULL\n\nDrei-Werte-Logik: TRUE/FALSE/UNKNOWN\nNULL=NULL → UNKNOWN (nicht TRUE!)\nmin=0 im ERD → nullable FK"
+    },
+    {
+      "id": "pruefungsfehler",
+      "title": "Prüfungsfehler & Gegenstrategien",
+      "icon": "🎯",
+      "category": "wiederholung",
+      "kurzdefinition": "Die finale Wiederholungsseite für den Tag vor der Prüfung. Sammelt die 10 häufigsten Fehler aus der Testanalyse, erklärt ihre Ursache, nennt die korrekte Regel und bietet Gegenstrategien. Kein neuer Stoff — nur gezielte Korrektur der bekannten Schwachstellen.",
+      "pruefungsrelevanz": "Alle Fehler stammen direkt aus der Testanalyse des ersten Tests und haben nachweislich Punkte gekostet. Diese Seite ist die Destillation aller anderen: Was muss ich am Testtag besonders sorgfältig prüfen?",
+      "levels": {
+        "1": [
+          "Die drei ERD-Kontrollfragen für eine 4: Ist es 1:1? → UNIQUE vorhanden? Liegt der FK auf der richtigen Seite (max=1)? Ist der FK NOT NULL oder nullable → min der FK-Seite?",
+          "Fehler 1 (UNIQUE bei 1:1 vergessen): Jede 1:1-Beziehung braucht FK + UNIQUE. Ohne UNIQUE ist es technisch 1:n. Fehler 4 (UNIQUE bei 1:n gesetzt): Bei 1:n kein UNIQUE — schränkt sonst auf 1:1 ein. Fehler 10 (= NULL): immer IS NULL verwenden."
+        ],
+        "2": [
+          "Die SQL-Kontrollfragen: Unterabfrage mit =, >, < → kann sie mehrere Werte liefern? → MAX/ALL/SOME. AND auf derselben Spalte → zwei separate Unterabfragen. NOT IN → NULL möglich? → NOT EXISTS.",
+          "Fehler 2 (NOT NULL aus falschem min-Wert): immer den min-Wert der Seite lesen, die den FK enthält. Fehler 3 (FK auf falsche Seite bei 1:n): FK in die Seite mit max=1. Fehler 7 (AND auf derselben Spalte): tnr='T1' AND tnr='T2' ist immer leer.",
+          "Fehler 8 (EXCEPT-Richtung): A EXCEPT B = A minus B, Reihenfolge entscheidend. Fehler 9 (count(*) bei LEFT JOIN): count(Spalte) verwenden, liefert 0 bei kein Treffer."
+        ],
+        "3": [
+          "Begründen können (1er-Niveau): Warum reicht (1,1)-Teilnahme nicht aus, um einen abhängigen Entitytyp zu identifizieren? Weil (1,1) nur die Teilnahme beschreibt, nicht die Identifikation. Das Merkmal ist FK im PK.",
+          "Warum ist NOT IN bei NULL problematisch? Weil x<>NULL = UNKNOWN und TRUE AND UNKNOWN = UNKNOWN — kein Datensatz wird ausgegeben.",
+          "Warum FK in die max=1-Seite bei 1:n? Weil eine Spalte nur einen Wert speichern kann. Die max=n-Seite hätte mehrere Partner, die nicht in einer Spalte passen."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Fehler 1 — UNIQUE vergessen bei 1:1",
+          "code": "-- FALSCH:\nMitarbeiterNr integer not null references Mitarbeiter\n-- KORREKT:\nMitarbeiterNr integer not null unique references Mitarbeiter",
+          "erklaerung": "Ohne UNIQUE können mehrere Restaurants denselben Mitarbeiter referenzieren → technisch 1:n."
+        },
+        {
+          "titel": "Fehler 2 — NOT NULL aus dem falschen min-Wert",
+          "code": "-- A(1,n)---ab---(0,1)B → FK in B, min_B=0\n-- FALSCH: A_ID integer not null references A\n-- KORREKT: A_ID integer references A   (nullable!)",
+          "erklaerung": "min_A=1 ist irrelevant, weil A den FK nicht enthält. B hat min=0 → nullable."
+        },
+        {
+          "titel": "Fehler 7 — AND auf derselben Spalte",
+          "code": "-- IMMER LEER:\nselect lnr from lt where tnr='T1' and tnr='T2';\n-- KORREKT:\nselect lnr from l\n where lnr in (select lnr from lt where tnr='T1')\n   and lnr in (select lnr from lt where tnr='T2');",
+          "erklaerung": "Eine Zeile kann nicht gleichzeitig zwei Werte in derselben Spalte haben."
+        }
+      ],
+      "typische_fehler": [
+        "1:1 ohne UNIQUE → UNIQUE hinzufügen (immer!).",
+        "NOT NULL aus falscher Seite → min der FK-Seite lesen.",
+        "FK auf falsche Seite → FK in max=1-Seite.",
+        "UNIQUE bei 1:n → entfernen (nur bei 1:1!).",
+        "(1,1) = abhängiger Typ → falsch, abh. Typ = FK im PK.",
+        "Mehrfachwert in Unterabfrage → max()/all()/some().",
+        "AND auf derselben Spalte → zwei separate Unterabfragen.",
+        "EXCEPT-Richtung vertauscht → erste Abfrage ist die Basis.",
+        "count(*) bei LEFT JOIN → count(Spalte) für 0 bei kein Treffer.",
+        "= NULL → IS NULL / IS NOT NULL."
+      ],
+      "cheatsheet": "Drei Testfragen nach jeder ERD-Aufgabe:\n  1. 1:1? → UNIQUE vorhanden?\n  2. FK auf richtige Seite (max=1)?\n  3. NOT NULL oder nullable → min der FK-Seite?\n\nSQL-Kontrollfragen:\n  Unterabfrage =,>,< → mehrere Werte? → MAX/ALL/SOME\n  AND selbe Spalte → zwei Unterabfragen\n  NOT IN → NULL möglich? → NOT EXISTS\n  EXCEPT → erste Abfrage = Basis\n  LEFT JOIN + count → count(Spalte)\n  Immer IS NULL statt = NULL"
+    }
+]

@@ -1,0 +1,401 @@
+{
+  "meta": {
+    "title": "DBI_1 Lernhub",
+    "subtitle": "Wiederholungstest 28.05.2026",
+    "fach": "DBI_1",
+    "lehrer": "BUGU / Burgstaller",
+    "klasse": "4AYIFT"
+  },
+  "categories": [
+    { "id": "erd", "label": "ERD & Modellierung", "color": "#3eb8a0" },
+    { "id": "implementierung", "label": "Implementierung", "color": "#f0a040" },
+    { "id": "sql", "label": "SQL", "color": "#7c9ef0" },
+    { "id": "wiederholung", "label": "Wiederholung", "color": "#f0c040" }
+  ],
+  "topics": [
+    {
+      "id": "konzeptionelles-datendesign",
+      "title": "Konzeptionelles Datendesign",
+      "icon": "🗺️",
+      "category": "erd",
+      "kurzdefinition": "Konzeptionelles Datendesign ist die zweite Phase im Datenbankentwurf. Sie beschreibt, WAS gespeichert wird, ohne sich um die technische Umsetzung zu kümmern. Das Ergebnis ist ein ER-Diagramm: Entitytypen, ihre Attribute und die Beziehungen zwischen ihnen. SQL kommt in dieser Phase noch gar nicht vor.",
+      "pruefungsrelevanz": "Grundlage für jede ERD-Aufgabe. Wer die Phasen nicht trennt, vermischt Modellierung und SQL und macht Folgefehler. Die Phasen 2 bis 4 sind direkt prüfungsrelevant.",
+      "levels": {
+        "1": [
+          "Der Datenbankentwurf läuft in Phasen ab. Für DBI_1 sind drei davon zentral: Phase 2 ist der konzeptionelle Entwurf (das ER-Diagramm). Phase 3 ist der logische Entwurf (Tabellen mit Primär- und Fremdschlüsseln in Attributschreibweise, noch ohne SQL). Phase 4 ist die physische Umsetzung (die DDL, also CREATE TABLE).",
+          "Jede Phase hat ein klares Ziel: Phase 2 modelliert die reale Welt, Phase 3 übersetzt das Modell in eine Tabellenstruktur, Phase 4 schreibt den ausführbaren SQL-Code."
+        ],
+        "2": [
+          "Im konzeptionellen Entwurf (Phase 2) werden Entitytypen als Rechtecke, Attribute als Ovale und Beziehungstypen als Rauten dargestellt. Jede Beziehungslinie wird mit der Chen-(min,max)-Notation beschriftet.",
+          "Im logischen Entwurf (Phase 3) wird jeder Entitytyp zu einer Tabelle. Der Primärschlüssel des Entitytyps wird zum PRIMARY KEY. Jeder Beziehungstyp führt je nach Kardinalität zu einem Fremdschlüssel oder einer eigenen Tabelle. Das logische Modell wird in Attributschreibweise notiert, z. B. Angestellter(SVN, Name, AbtNr > Abteilung).",
+          "Erst in Phase 4 entsteht der eigentliche SQL-Code. Die Reihenfolge der CREATE-TABLE-Befehle muss die Abhängigkeiten beachten: referenzierte Tabellen zuerst."
+        ],
+        "3": [
+          "Für eine 1 musst du die Übergänge zwischen den Phasen begründen können. Beispiel: Warum entsteht aus einer m:n-Beziehung eine eigene Tabelle, aus einer 1:n-Beziehung aber nur ein Fremdschlüssel? Antwort: Weil bei m:n keiner der beiden Entitytypen einen einzelnen Verweis speichern kann.",
+          "Die Phasentrennung ist kein Selbstzweck: Sie sorgt dafür, dass man zuerst die Realität korrekt erfasst (Phase 2), bevor man sich um technische Details kümmert (Phase 4). Ein Fehler in Phase 2 pflanzt sich durch alle weiteren Phasen fort."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Phasen am Beispiel Kurs/Referent",
+          "code": "Phase 2 (ERD):\n[Kurs] --- (0,n) --- <geeignet> --- (1,n) --- [Referent]\n\nPhase 3 (logisches Modell):\nKurs(knr, bezeichn, tage, preis)\nReferent(pnr > Person, gebdat, seit, titel)\ngeeignet(knr > Kurs, pnr > Referent)\n\nPhase 4 (DDL):\ncreate table geeignet (\n  knr integer not null references kurs\n, pnr integer not null references referent\n, primary key (knr, pnr)\n);",
+          "erklaerung": "Dasselbe Konzept durchläuft alle drei Phasen. Die m:n-Beziehung wird in Phase 3 zur Zwischentabelle und in Phase 4 zur DDL mit zusammengesetztem PK."
+        }
+      ],
+      "typische_fehler": [
+        "SQL bereits in Phase 2 verwenden — das ERD beschreibt WAS, nicht WIE.",
+        "Beziehungstyp im logischen Modell falsch umsetzen, weil das ERD nicht sauber gelesen wurde.",
+        "Erstellungsreihenfolge in Phase 4 ignorieren — referenzierte Tabellen müssen zuerst existieren."
+      ],
+      "cheatsheet": "Phase 2: ERD (Entitytypen, Attribute, Beziehungen)\nPhase 3: Logisches Modell (Tabellen, PK, FK in Attributschreibweise)\nPhase 4: DDL (CREATE TABLE)\n\nEntitytyp → Tabelle\n1:1 → FK + UNIQUE\n1:n → FK auf max=1-Seite\nm:n → eigene Zwischentabelle\nAbhängiger Entitytyp → FK ist Teil des PK"
+    },
+    {
+      "id": "erd-lesen",
+      "title": "ERD lesen",
+      "icon": "🔍",
+      "category": "erd",
+      "kurzdefinition": "ERD lesen bedeutet, ein fertiges ER-Diagramm korrekt in natürliche Sprache zu übersetzen und die Beziehungen, Kardinalitäten und Teilnahmen zu interpretieren. Wir verwenden ausschließlich die Chen-(min,max)-Notation.",
+      "pruefungsrelevanz": "Grundkompetenz für nahezu alle Prüfungsaufgaben. Wer ein ERD nicht korrekt liest, macht Fehler bei FK-Platzierung, NULL/NOT NULL und beim Beziehungstyp. In der Testanalyse war das Lesen der Kardinalitäten die häufigste Fehlerquelle.",
+      "levels": {
+        "1": [
+          "Der min-Wert gibt die untere Schranke an — wie oft ein Entitytyp mindestens teilnehmen muss. min=0 bedeutet optionale (teilweise) Teilnahme: der Entitytyp darf ohne Partner existieren. min=1 bedeutet verpflichtende (vollständige) Teilnahme: der Entitytyp muss immer teilnehmen.",
+          "Der max-Wert gibt die obere Schranke an. max=1 bedeutet höchstens einmal, max=n bedeutet beliebig oft.",
+          "Die vier Standardkombinationen musst du auswendig kennen: (0,1) optional, höchstens einmal. (1,1) verpflichtend, genau einmal. (0,n) optional, beliebig oft. (1,n) verpflichtend, mindestens einmal bis viele."
+        ],
+        "2": [
+          "Der Beziehungstyp ergibt sich ausschließlich aus den max-Werten — die min-Werte spielen dafür keine Rolle. Beide max=1 → 1:1. Ein max=1, einer=n → 1:n. Beide max=n → m:n.",
+          "Vollständige Teilnahme (min=1) bedeutet, der Entitytyp muss an der Beziehung teilnehmen — im logischen Modell wird das zu NOT NULL beim Fremdschlüssel. Teilweise Teilnahme (min=0) bedeutet, der Entitytyp darf teilnehmen — im logischen Modell zu NULL erlaubt.",
+          "Lesemethode systematisch: Gehe immer in beide Richtungen und bilde je einen deutschen Satz. Beginne mit dem Entitytyp, lies die Kardinalität direkt daneben, dann den Beziehungsnamen, dann die andere Kardinalität, dann den anderen Entitytyp."
+        ],
+        "3": [
+          "Für eine 1 musst du auch begründen, warum eine Kardinalität so gewählt wurde, und Fehler in einem ERD erkennen. Typische 1er-Frage: Welche Daten können mit diesem ERD nicht gespeichert werden? Wenn ein Kurs mit (1,n) teilnimmt, kann ein Kurs ohne Referent nicht gespeichert werden — auch wenn es ihn in der Realität gäbe.",
+          "Rekursive Beziehungen lesen: Ein Entitytyp hat eine Beziehung mit sich selbst, z. B. [Kurs] --- (0,n) --- <setzt voraus> --- (0,n) --- [Kurs]. Ein Kurs kann null bis viele andere Kurse voraussetzen und selbst Voraussetzung für viele sein. Das ist eine m:n-Beziehung eines Entitytyps mit sich selbst."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Beispiel 1 — einfach (1:n)",
+          "code": "[Angestellter] --- (1,1) --- <gehört zu> --- (1,n) --- [Abteilung]",
+          "erklaerung": "Ein Angestellter gehört zu genau einer Abteilung (1,1). Eine Abteilung hat mindestens einen bis beliebig viele Angestellte (1,n). Beziehungstyp: max links=1, max rechts=n → 1:n. Vollständige Teilnahme auf beiden Seiten."
+        },
+        {
+          "titel": "Beispiel 2 — mit optionaler Seite (1:1)",
+          "code": "[Mitarbeiter] --- (0,1) --- <leitet> --- (1,1) --- [Restaurant]",
+          "erklaerung": "Ein Mitarbeiter leitet null oder ein Restaurant (0,1) — nicht jeder ist Leiter. Jedes Restaurant wird von genau einem Mitarbeiter geleitet (1,1). Beide max=1 → 1:1. FK kommt in Restaurant (vollständige Seite), NOT NULL + UNIQUE."
+        },
+        {
+          "titel": "Beispiel 3 — Grenzfall (max=3)",
+          "code": "[Angestellter] --- (0,3) --- <verantwortet> --- (1,1) --- [Projekt]",
+          "erklaerung": "Ein Angestellter verantwortet null bis höchstens drei Projekte. Jedes Projekt hat genau einen Verantwortlichen. Beziehungstyp: bleibt 1:n (der Wert 3 ist eine Geschäftsregel, ändert den Grundtyp nicht)."
+        },
+        {
+          "titel": "Beispiel 4 — rekursiv (m:n)",
+          "code": "[Kurs] --- (0,n) --- <setzt voraus> --- (0,n) --- [Kurs]",
+          "erklaerung": "Beide max=n → m:n eines Entitytyps mit sich selbst. Im logischen Modell: eigene Zwischentabelle, beide FKs verweisen auf Kurs."
+        }
+      ],
+      "typische_fehler": [
+        "Seiten-Verwechslung: Die Kardinalität neben Entitytyp A beschreibt A, nicht B. Merkhilfe: Die Zahl hängt am Entitytyp, den sie beschreibt.",
+        "Beziehungstyp nach dem min-Wert bestimmen — falsch! Nur der max-Wert entscheidet über 1:1, 1:n oder m:n.",
+        "Vollständige und teilweise Teilnahme verwechseln: min=1 ist vollständig (NOT NULL), min=0 ist teilweise (NULL erlaubt).",
+        "(1,1)-Teilnahme automatisch als abhängigen Entitytyp deuten — das ist eine separate Eigenschaft (FK im PK)."
+      ],
+      "cheatsheet": "(0,1) optional, max. 1\n(1,1) verpflichtend, genau 1\n(0,n) optional, beliebig\n(1,n) verpflichtend, mind. 1\n\nBeziehungstyp: NUR max-Werte!\n  beide max=1 → 1:1\n  ein max=n → 1:n\n  beide max=n → m:n\n\nmin=0 → teilweise → NULL erlaubt\nmin=1 → vollständig → NOT NULL\nDie Zahl gehört zum Entitytyp, an dem sie steht!"
+    },
+    {
+      "id": "chen-notation",
+      "title": "Chen-(min,max)-Notation",
+      "icon": "📌",
+      "category": "erd",
+      "kurzdefinition": "Die Chen-(min,max)-Notation beschriftet Kardinalitäten in ER-Diagrammen. Jede Beziehungslinie erhält auf beiden Seiten ein Wertepaar (min, max), das beschreibt, wie oft der jeweilige Entitytyp an der Beziehung teilnehmen muss bzw. darf. Das Wertepaar steht immer direkt neben dem Entitytyp, den es beschreibt — nicht neben der Raute.",
+      "pruefungsrelevanz": "Grundlage jeder ERD-Aufgabe. Wer die Notation nicht sicher liest und schreibt, macht Folgefehler bei FK-Platzierung, NULL/NOT NULL und Beziehungstyp. Laut Testanalyse war die Verwechslung der Seiten die häufigste Fehlerquelle.",
+      "levels": {
+        "1": [
+          "Die vier Standardkombinationen, die nahezu alle Prüfungsfälle abdecken: (0,1) optional, höchstens einmal → max. 1 Partner. (1,1) verpflichtend, genau einmal → genau 1 Partner. (0,n) optional, beliebig oft → 0 bis viele Partner. (1,n) verpflichtend, beliebig oft → mindestens 1 bis viele Partner.",
+          "Der min-Wert beantwortet: Muss dieser Entitytyp an der Beziehung teilnehmen? Der max-Wert beantwortet: Wie viele Partner kann er maximal haben? Diese beiden Fragen getrennt zu halten ist der Schlüssel zum fehlerfreien Lesen.",
+          "Der Beziehungstyp ergibt sich ausschließlich aus den max-Werten: beide max=1 → 1:1, ein max=n → 1:n, beide max=n → m:n."
+        ],
+        "2": [
+          "Vollständige vs. teilweise Teilnahme sind Fachbegriffe, die in Multiple-Choice-Fragen als Antwortmöglichkeiten auftauchen. Vollständige Teilnahme (min=1) bedeutet, der Entitytyp kann in der Datenbank nicht ohne Partnerdatensatz existieren → der FK ist NOT NULL. Teilweise Teilnahme (min=0) bedeutet, er darf ohne Partner existieren → der FK darf NULL sein.",
+          "Die kritische Konsequenz für die DDL: Ob ein FK als NOT NULL definiert wird, hängt direkt vom min-Wert der Seite ab, die den FK enthält. Das war eine explizite Prüfungsaufgabe im ersten Test (Aufgaben 1, 2, 6, 7).",
+          "Wo steht die Kardinalität? Immer neben dem Entitytyp, den sie beschreibt. Bei [A]---(1,n)---<ab>---(0,1)---[B] beschreibt (1,n) die Teilnahme von A und (0,1) die von B. A muss mindestens einmal teilnehmen, B darf höchstens einmal. Der FK kommt in B (Seite mit max=1)."
+        ],
+        "3": [
+          "Auf Level 3 musst du selbst eine Notation schreiben, die eine gegebene Anforderung korrekt abbildet, und begründen, warum eine Kombination gewählt wurde. Beispiel: 'Ein Angestellter darf höchstens drei Projekte verantworten. Jedes Projekt hat genau einen Verantwortlichen.' → [Angestellter]---(0,3)---<verantwortet>---(1,1)---[Projekt]. Der Wert 3 ist eine Geschäftsregel, der Beziehungstyp bleibt 1:n.",
+          "Rekursive Beziehung: Ein Entitytyp hat eine Beziehung mit sich selbst, z. B. [Kurs]---(0,n)---<setzt voraus>---(0,n)---[Kurs]. Beide Kardinalitäten beschreiben Kurs, aber in unterschiedlichen Rollen (voraussetzender vs. vorausgesetzter Kurs). Das ist m:n."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Beispiel 1 — Standardfall 1:n",
+          "code": "[Angestellter] --- (1,1) --- <gehört zu> --- (1,n) --- [Abteilung]",
+          "erklaerung": "Jeder Angestellte gehört zu genau einer Abteilung. Jede Abteilung hat mindestens einen Angestellten. max_Angestellter=1, max_Abteilung=n → 1:n. FK in Angestellter, NOT NULL (min=1)."
+        },
+        {
+          "titel": "Beispiel 2 — 1:1 mit optionaler Seite (Aufgabe 7)",
+          "code": "[Mitarbeiter] --- (0,1) --- <leitet> --- (1,1) --- [Restaurant]",
+          "erklaerung": "Beide max=1 → 1:1. FK in Restaurant (vollständige Seite), NOT NULL + UNIQUE."
+        },
+        {
+          "titel": "Beispiel 3 — m:n, beide optional",
+          "code": "[Angestellter] --- (0,n) --- <arbeitet an> --- (1,n) --- [Projekt]",
+          "erklaerung": "Beide max=n → m:n. Im logischen Modell: eigene Zwischentabelle bearbeitet(ANr > Angestellter, PNr > Projekt)."
+        }
+      ],
+      "typische_fehler": [
+        "Seitenverwechslung: Das Wertepaar neben Entitytyp A beschreibt A, nicht B.",
+        "min-Wert mit Beziehungstyp verwechseln — der Typ ergibt sich nur aus den max-Werten.",
+        "UNIQUE bei 1:n setzen — verwandelt die Beziehung faktisch in 1:1. UNIQUE nur bei 1:1.",
+        "NOT NULL bei (0,1) setzen — widerspricht der teilweisen Teilnahme (min=0)."
+      ],
+      "cheatsheet": "Wertepaar steht NEBEN dem Entitytyp, den es beschreibt!\n\nmin=0 → optional → teilweise → FK NULL erlaubt\nmin=1 → verpflichtend → vollständig → FK NOT NULL\nmax=1 → 1-Seite | max=n → n-Seite\n\nBeziehungstyp (NUR max zählt!):\n  beide max=1 → 1:1 → FK + UNIQUE\n  ein max=n → 1:n → FK auf max=1-Seite\n  beide max=n → m:n → Zwischentabelle"
+    },
+    {
+      "id": "kraehenfuss",
+      "title": "Krähenfußnotation",
+      "icon": "🐾",
+      "category": "erd",
+      "kurzdefinition": "Die Krähenfußnotation (Crow's Foot) ist eine alternative grafische Darstellung für ER-Diagramme. Statt Zahlenpaare an die Linien zu schreiben, verwendet sie grafische Symbole direkt an den Linienenden, um Kardinalität und Optionalität gleichzeitig darzustellen. Der Name kommt vom Symbol für 'mehrere', das wie ein Vogelfuß aussieht.",
+      "pruefungsrelevanz": "In der Testanalyse gab es eine direkte Aufgabe (Aufgabe 8: Produkt/Kategorie in Krähenfuß zeichnen). Zwei typische Formate: Chen-ERD in Krähenfuß umwandeln oder umgekehrt. Ein falsches Symbol ergibt eine komplett andere Beziehung.",
+      "levels": {
+        "1": [
+          "Vier Grundsymbole auswendig: || = genau eins (verpflichtend, max. 1). o| = null oder eins (optional, max. 1). ||< = eins oder viele (verpflichtend, viele). o< = null oder viele (optional, viele).",
+          "Merksatz: Kreis bedeutet Null (optional), Strich bedeutet Eins (verpflichtend), Krähenfuß bedeutet Viele. Aus diesen drei Bausteinen setzen sich alle vier Symbole zusammen.",
+          "Man liest die Symbole vom Entitytyp weg in Richtung Beziehung: Das Symbol direkt am Entitytyp gibt das Maximum (Strich oder Krähenfuß), das Symbol daneben gibt das Minimum (Kreis oder Strich)."
+        ],
+        "2": [
+          "Umwandlung Chen → Krähenfuß: min=0 wird zum Kreis, min=1 zum Strich; max=1 zum Strich, max=n zum Krähenfuß. Reihenfolge: Minimum zuerst (zur Linie hin), Maximum zweites (am Entitytyp).",
+          "Umwandlung Krähenfuß → Chen: spiegelbildlich lesen. Kreis → min=0, Strich (Minimum) → min=1; Strich (Maximum) → max=1, Krähenfuß → max=n.",
+          "Darstellungsphilosophie: In Chen stehen die Kardinalitäten als Text neben der Linie. In Krähenfuß sind die Symbole Teil der Linie selbst. Beide transportieren dieselbe Information (min und max), nur unterschiedlich codiert."
+        ],
+        "3": [
+          "Auf Level 3 vollständige Beziehungen umwandeln und begründen, warum welches Symbol wo steht. Häufige Falle: Die Krähenfußnotation kennt keine direkte Entsprechung für konkrete Obergrenzen wie max=3. In Chen kann man (0,3) schreiben, in Krähenfuß gibt es dafür kein Symbol — man verwendet das 'viele'-Symbol und notiert die Einschränkung als Anmerkung.",
+          "Das zeigt eine grundlegende Grenze: Die Krähenfußnotation ist grafisch intuitiver, aber weniger präzise als die Chen-Notation."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Beispiel 1 — 1:n, beide verpflichtend",
+          "code": "Chen:      [Angestellter] --- (1,1) --- <gehört zu> --- (1,n) --- [Abteilung]\nKrähenfuß: Angestellter ||----||< Abteilung",
+          "erklaerung": "Jeder Angestellte gehört zu genau einer Abteilung (||). Jede Abteilung hat mindestens einen Angestellten (||<). Beide Seiten verpflichtend (kein Kreis)."
+        },
+        {
+          "titel": "Beispiel 2 — 1:n mit optionaler n-Seite (Aufgabe 8)",
+          "code": "Chen:      [Produkt] --- (1,1) --- <gehört zu> --- (0,n) --- [Kategorie]\nKrähenfuß: Kategorie ||----o< Produkt",
+          "erklaerung": "Jedes Produkt gehört zu genau einer Kategorie (||). Eine Kategorie kann null bis viele Produkte haben (o<). Direkte Musterlösung aus Aufgabe 8 der Testanalyse."
+        },
+        {
+          "titel": "Beispiel 3 — 1:1 mit gemischter Teilnahme",
+          "code": "Chen:      [Mitarbeiter] --- (0,1) --- <leitet> --- (1,1) --- [Restaurant]\nKrähenfuß: Mitarbeiter o|----|| Restaurant",
+          "erklaerung": "Ein Mitarbeiter leitet optional ein Restaurant (o|). Ein Restaurant wird verpflichtend von genau einem Mitarbeiter geleitet (||)."
+        }
+      ],
+      "typische_fehler": [
+        "Lesedirektions-Verwechslung: Das Symbol direkt am Entitytyp ist das Maximum, das Symbol weiter innen das Minimum. Merkhilfe: Das Maximum umarmt den Entitytyp.",
+        "Symbol auf der falschen Seite platzieren. Kontrollfrage: Welchen Entitytyp beschreibt dieses Symbol?",
+        "Mindestteil vergessen: Man braucht immer beide Teile des Symbols, auch den Kreis (optional) oder den zweiten Strich (verpflichtend)."
+      ],
+      "cheatsheet": "|| = (1,1) genau eins, verpflichtend\no| = (0,1) null oder eins, optional\n||< = (1,n) ein oder viele, verpflichtend\no< = (0,n) null oder viele, optional\n\nMin (zur Linie): o=0, |=1\nMax (am Entitytyp): |=1, <=n\nKreis=0, Strich=1, Krähenfuß=viele"
+    },
+    {
+      "id": "umwandlung",
+      "title": "Chen ↔ Krähenfuß umwandeln",
+      "icon": "🔄",
+      "category": "erd",
+      "kurzdefinition": "Die Umwandlung zwischen Chen-(min,max) und Krähenfuß in beide Richtungen. Beide Notationen beschreiben dasselbe ERD — sie unterscheiden sich nur in der Codierung. Jedes (min,max)-Paar entspricht genau einem Krähenfuß-Symbol und umgekehrt.",
+      "pruefungsrelevanz": "Aufgabe 8 der Testanalyse war eine direkte Umwandlung (Produkt/Kategorie: Chen → Krähenfuß). Beide Richtungen sind prüfungsrelevant — isolierte Symbolübersetzung und vollständige Beziehungsumwandlung.",
+      "levels": {
+        "1": [
+          "Jedes (min,max)-Paar hat genau ein Krähenfuß-Symbol: min=0 → Kreis (o), min=1 → Strich (|), max=1 → Strich (|), max=n → Krähenfuß (<).",
+          "Das Symbol steht immer neben dem Entitytyp, den es beschreibt — genau wie das (min,max)-Paar in Chen. Diese Parallelität macht die Umwandlung mechanisch und fehlersicher.",
+          "Die vier Paare: (1,1) ↔ ||, (0,1) ↔ o|, (1,n) ↔ ||<, (0,n) ↔ o<."
+        ],
+        "2": [
+          "Schritt-für-Schritt Chen → Krähenfuß: 1) Lies das (min,max)-Paar für A. 2) Übersetze: min=0→o, min=1→|, max=1→|, max=n→<. 3) Setze das Symbol zusammen (Minimum zuerst, Maximum am Entitytyp). 4) Wiederhole für B.",
+          "Schritt-für-Schritt Krähenfuß → Chen: 1) Lies das Symbol am Entitytyp A. 2) Identifiziere die beiden Teile (am Entitytyp = Maximum, zur Linie = Minimum). 3) Übersetze. 4) Setze (min,max) zusammen.",
+          "Nach der Umwandlung immer die FK-Konsequenz ableiten: Wenn feststeht, welche Seite max=1 hat, weiß man, wohin der FK kommt. Der min-Wert dieser Seite bestimmt NOT NULL oder nullable."
+        ],
+        "3": [
+          "Grenzfälle erklären: Der konkrete Maximalwert (0,3) aus Chen hat kein Äquivalent in Krähenfuß. Man verwendet o< (null oder viele) mit einer Textanmerkung 'max. 3'. Die Information geht bei der Umwandlung verloren.",
+          "Rekursive Beziehungen umwandeln: [Kurs]---(0,n)---<setzt voraus>---(0,n)---[Kurs] wird zu Kurs o< ---- o< Kurs, wobei die Leserichtung der Symbole beachtet werden muss."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Chen → Krähenfuß: 1:n",
+          "code": "Chen:  [Angestellter] --- (1,1) --- <gehört zu> --- (1,n) --- [Abteilung]\n\nAngestellter (1,1): min=1→|, max=1→|  → ||\nAbteilung    (1,n): min=1→|, max=n→<  → ||<\n\nKrähenfuß: Angestellter ||----||< Abteilung",
+          "erklaerung": "Jedes Symbol wird Stück für Stück aus dem (min,max)-Paar gebildet."
+        },
+        {
+          "titel": "Chen → Krähenfuß: Testaufgabe 8",
+          "code": "Chen:  [Produkt] --- (1,1) --- <gehört zu> --- (0,n) --- [Kategorie]\n\nProdukt   (1,1): → ||\nKategorie (0,n): → o<\n\nKrähenfuß: Kategorie ||----o< Produkt",
+          "erklaerung": "Direkte Reproduktion von Aufgabe 8. Das Symbol gehört immer zum Entitytyp, den es beschreibt."
+        },
+        {
+          "titel": "Krähenfuß → Chen: Rückumwandlung",
+          "code": "Krähenfuß: Kino ||----||< Saal\n\nKino  ||:  min=1, max=1  → (1,1)\nSaal  ||<: min=1, max=n  → (1,n)\n\nChen: [Kino] --- (1,1) --- <hat> --- (1,n) --- [Saal]",
+          "erklaerung": "Beziehungstyp 1:n. FK kommt in Saal (Seite mit max=1), weil jeder Saal genau einem Kino zugeordnet ist. NOT NULL."
+        },
+        {
+          "titel": "Grenzfall max=3",
+          "code": "Chen: [Angestellter] --- (0,3) --- <verantwortet> --- (1,1) --- [Projekt]\n\nAngestellter (0,3): max=3 hat kein exaktes Symbol!\nNäherung: o< (mit Anmerkung 'max. 3')\nProjekt (1,1): → ||\n\nKrähenfuß: Angestellter o< [max.3] ----|| Projekt",
+          "erklaerung": "Die Krähenfußnotation kann konkrete Obergrenzen nicht exakt darstellen. Die Information muss als Anmerkung festgehalten werden."
+        }
+      ],
+      "typische_fehler": [
+        "Symbol-Reihenfolge-Verwechslung: Minimum-Symbol näher zur Linie, Maximum-Symbol am Entitytyp.",
+        "Symbol auf der falschen Seite platzieren. Kontrollfrage: Welchen Entitytyp beschreibt dieses (min,max)-Paar?",
+        "Informationsverlust bei konkreten Obergrenzen (0,3) ignorieren.",
+        "FK-Konsequenz nach der Umwandlung vergessen — die Umwandlung ist Mittel zum Zweck, nicht Selbstzweck."
+      ],
+      "cheatsheet": "Chen → Krähenfuß:\n  min=0→o | min=1→| | max=1→| | max=n→<\n  Reihenfolge: Minimum zuerst, Maximum am Entitytyp\n\n(1,1)↔|| | (0,1)↔o| | (1,n)↔||< | (0,n)↔o<\n\nKontrollfragen nach Umwandlung:\n  1. Welche Seite hat max=1? → FK dorthin\n  2. Hat diese Seite min=1? → FK NOT NULL\n  3. Ist es 1:1? → FK braucht UNIQUE"
+    },
+    {
+      "id": "beziehungstypen",
+      "title": "Beziehungstypen 1:1, 1:n, m:n",
+      "icon": "🔗",
+      "category": "erd",
+      "kurzdefinition": "Der Beziehungstyp beschreibt, wie viele Instanzen zweier Entitytypen miteinander in Beziehung stehen können. Es gibt genau drei: 1:1, 1:n und m:n. Die Unterscheidung ist fundamental, weil der Beziehungstyp direkt bestimmt, wo der FK landet, ob er UNIQUE sein muss und ob eine eigene Zwischentabelle entsteht.",
+      "pruefungsrelevanz": "Notwendige Zwischenbestimmung in jeder Implementierungsaufgabe. Wer den Beziehungstyp falsch bestimmt, platziert den FK falsch, setzt UNIQUE falsch oder erstellt eine unnötige Zwischentabelle. Besonders häufig: Verwechslung von 1:1 und 1:n bei gemischten min-max-Kombinationen.",
+      "levels": {
+        "1": [
+          "Der Beziehungstyp ergibt sich ausschließlich aus den max-Werten. Beide max=1 → 1:1. Ein max=1, einer=n → 1:n. Beide max=n → m:n. Die min-Werte spielen dafür keine Rolle.",
+          "Umsetzung auf Level 1: Bei 1:1 und 1:n kommt ein FK in eine bestehende Tabelle, bei m:n entsteht eine neue Zwischentabelle."
+        ],
+        "2": [
+          "Bei 1:n kommt der FK in die Tabelle auf der Seite mit max=1 — die Tabelle, deren Datensätze höchstens einem Datensatz der anderen Seite zugeordnet sind. Intuitiv: Man speichert den FK dort, wo der Zeiger auf einen einzigen sitzt. Der min-Wert bestimmt NOT NULL (min=1) oder nullable (min=0).",
+          "Bei 1:1 gibt es theoretisch zwei Möglichkeiten für den FK. In der Praxis wählt man die Seite mit vollständiger Teilnahme (min=1). Der FK braucht immer ein UNIQUE-Constraint, sonst könnte derselbe FK-Wert mehrfach vorkommen — was die 1:1-Beziehung faktisch zu 1:n macht.",
+          "Bei m:n ist keine der beiden Tabellen geeignet, einen einzelnen FK aufzunehmen. Deshalb entsteht eine neue Zwischentabelle, deren PK aus den FKs beider Seiten zusammengesetzt ist."
+        ],
+        "3": [
+          "Fehler in einer vorgegebenen Umsetzung erkennen: Eine Tabelle hat einen FK ohne UNIQUE — ist das 1:1 oder 1:n? Immer 1:n, weil ohne UNIQUE mehrere Datensätze denselben FK-Wert haben können. Das UNIQUE-Constraint ist das technische Mittel, das eine 1:n-Umsetzung in 1:1 verwandelt.",
+          "Rekursive Beziehung eines Entitytyps mit sich selbst: [Angestellter]---(0,n)---<untersteht>---(0,n)---[Angestellter] ist m:n. Eigene Zwischentabelle untersteht(SVN > Angestellter, LeiterSVN > Angestellter) mit zusammengesetztem PK, beide FKs zeigen auf dieselbe Tabelle."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "1:n (happysushi)",
+          "code": "[Angestellter] --- (1,1) --- <gehört zu> --- (1,n) --- [Abteilung]",
+          "erklaerung": "max_Angestellter=1, max_Abteilung=n → 1:n. FK in Angestellter, NOT NULL, kein UNIQUE."
+        },
+        {
+          "titel": "1:1 (Testanalyse Aufgabe 7)",
+          "code": "[Mitarbeiter] --- (0,1) --- <leitet> --- (1,1) --- [Restaurant]\n\ncreate table Restaurant (\n  RestaurantNr   integer  not null primary key\n, MitarbeiterNr  integer  not null unique references Mitarbeiter\n);",
+          "erklaerung": "Beide max=1 → 1:1. FK in Restaurant, NOT NULL + UNIQUE. UNIQUE verhindert, dass zwei Restaurants denselben Leiter haben."
+        },
+        {
+          "titel": "m:n (Schulungsfirma)",
+          "code": "[Kurs] --- (0,n) --- <geeignet> --- (1,n) --- [Referent]\n\ncreate table geeignet (\n  knr  integer  not null references kurs\n, pnr  integer  not null references referent\n, primary key (knr, pnr)\n);",
+          "erklaerung": "Beide max=n → m:n. Eigene Zwischentabelle mit zusammengesetztem PK aus beiden FKs."
+        },
+        {
+          "titel": "m:n rekursiv (happysushi)",
+          "code": "[Angestellter] --- (0,n) --- <untersteht> --- (0,n) --- [Angestellter]\n\ncreate table untersteht (\n  SVN        varchar(10)  not null references Angestellter\n, LeiterSVN  varchar(10)  not null references Angestellter\n, primary key (SVN, LeiterSVN)\n);",
+          "erklaerung": "Beide max=n → m:n, rekursiv. Beide FKs zeigen auf dieselbe Tabelle in unterschiedlichen Rollen."
+        }
+      ],
+      "typische_fehler": [
+        "Beziehungstyp nach den min-Werten bestimmen — nur die max-Werte zählen.",
+        "UNIQUE bei 1:n vergessen oder falsch setzen — bei 1:n kein UNIQUE, bei 1:1 zwingend.",
+        "Zwischentabelle für 1:n erstellen — eine Zwischentabelle ist nur bei m:n nötig.",
+        "FK auf die falsche Seite bei 1:n. Kontrollfrage: Welche Tabelle hält den Zeiger auf genau einen?"
+      ],
+      "cheatsheet": "max=1, max=1 → 1:1 → FK + UNIQUE\nmax=1, max=n → 1:n → FK auf max=1-Seite\nmax=n, max=n → m:n → Zwischentabelle\n\nNULL: min der FK-Seite (nicht der anderen!)\n  min=0 → nullable\n  min=1 → NOT NULL\n\nKontrollfragen:\n  1. Beide max=1? → UNIQUE nicht vergessen\n  2. m:n? → Zwischentabelle, PK aus beiden FKs\n  3. FK NOT NULL? → min-Wert der FK-Seite"
+    },
+    {
+      "id": "erd-tabellen",
+      "title": "ERD in Tabellen umsetzen",
+      "icon": "🗂️",
+      "category": "erd",
+      "kurzdefinition": "Die Umsetzung eines ERDs in Tabellen ist der Übergang von Phase 2 zu Phase 3 und 4. Ziel: die modellierten Entitytypen und Beziehungen in eine redundanzfreie Tabellenstruktur mit Primärschlüsseln, Fremdschlüsseln und Integritätsbedingungen zu übersetzen.",
+      "pruefungsrelevanz": "Kernthema der Prüfung. In der Testanalyse betrafen Aufgaben 1 bis 7 alle direkt oder indirekt die Umsetzung von ERDs — von FK-Platzierung über NULL/NOT NULL bis zur CREATE-TABLE-Reihenfolge.",
+      "levels": {
+        "1": [
+          "Jeder Entitytyp wird zu einer Tabelle. Der Primärschlüssel des Entitytyps wird zum PRIMARY KEY. Jedes Attribut wird zur Spalte.",
+          "Die drei Beziehungsregeln: 1:1 → ein FK + UNIQUE. 1:n → FK in die Tabelle auf der Seite mit max=1, ohne UNIQUE. m:n → neue Zwischentabelle, PK aus den FKs beider Seiten.",
+          "Ob der FK NOT NULL ist, hängt vom min-Wert der Seite ab, die den FK enthält: min=1 → NOT NULL, min=0 → nullable."
+        ],
+        "2": [
+          "Die Reihenfolge der CREATE-TABLE-Befehle ist nicht beliebig: Eine Tabelle mit FK kann erst erstellt werden, wenn die referenzierte Tabelle existiert. Deshalb: starke Entitytypen ohne FKs zuerst, dann abhängige Entitytypen, dann Beziehungstabellen.",
+          "Bei 1:1 wählt man die Seite mit vollständiger Teilnahme (min=1), weil der FK dort NOT NULL sein muss und die Semantik klar ist. Nur den FK hinzuzufügen reicht nicht — ohne UNIQUE ist es technisch 1:n. Das war der häufigste Fehler im ersten Test.",
+          "Bei abhängigen Entitytypen ist der FK Teil des Primärschlüssels. Der zusammengesetzte PK besteht aus dem FK der starken Seite plus einem Teilschlüssel."
+        ],
+        "3": [
+          "Mehrstufig abhängiges ERD: Kino → Saal → Vorstellung. Saal ist abhängig von Kino (PK = KinoNr + SaalNr), Vorstellung ist abhängig von Saal (PK = KinoNr + SaalNr + Beginnzeitpunkt). Der zusammengesetzte FK (KinoNr, SaalNr) in Vorstellung erfordert einen expliziten FOREIGN KEY-Block, weil references Saal allein nicht genügt, wenn der PK aus mehreren Attributen besteht.",
+          "Mehrwertiger Beziehungstyp (ternär): Bei drei beteiligten Entitytypen entsteht eine Tabelle mit PK aus allen drei FKs."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "1:1 (happysushi)",
+          "code": "create table Angestellter (\n  SVN     varchar(10)  not null primary key\n, Vorname varchar(16)  not null\n);\n\ncreate table Filiale (\n  FilialNr   integer      not null primary key\n, Ort        varchar(16)  not null\n, LeiterSVN  varchar(10)  not null unique references Angestellter(SVN)\n);",
+          "erklaerung": "1:1 → FK in Filiale, NOT NULL (vollständige Teilnahme) + UNIQUE (1:1-Bedingung)."
+        },
+        {
+          "titel": "Abhängiger Entitytyp Kino/Saal/Vorstellung (Aufgabe 5)",
+          "code": "create table Kino (\n  KinoNr  integer      not null primary key\n, Name    varchar(32)  not null\n);\n\ncreate table Saal (\n  KinoNr  integer  not null references Kino   -- FK = Teil des PK\n, SaalNr  integer  not null                   -- Teilschlüssel\n, primary key (KinoNr, SaalNr)\n);\n\ncreate table Vorstellung (\n  KinoNr           integer   not null\n, SaalNr           integer   not null\n, Beginnzeitpunkt  datetime  not null\n, primary key (KinoNr, SaalNr, Beginnzeitpunkt)\n, foreign key (KinoNr, SaalNr) references Saal(KinoNr, SaalNr)\n);",
+          "erklaerung": "Zwei Stufen Abhängigkeit. Reihenfolge zwingend: erst Kino, dann Saal, dann Vorstellung. Zusammengesetzter FK braucht expliziten FOREIGN KEY-Block."
+        }
+      ],
+      "typische_fehler": [
+        "UNIQUE-Constraint bei 1:1 vergessen — ohne UNIQUE ist es technisch 1:n (Aufgaben 1, 7, 10).",
+        "Falsche Reihenfolge der CREATE-TABLE-Befehle — referenzierte Tabelle muss zuerst existieren.",
+        "Zusammengesetzten FK bei abhängigen Entitytypen vergessen — references Saal allein genügt nicht bei mehrteiligem PK.",
+        "NULL/NOT NULL aus dem falschen min-Wert ableiten — immer den min-Wert der FK-Seite ansehen."
+      ],
+      "cheatsheet": "Reihenfolge CREATE TABLE:\n  1. Starke Entitytypen (keine FKs)\n  2. Abhängige Entitytypen (FK im PK)\n  3. Tabellen mit einfachen FKs\n  4. Zwischentabellen (m:n)\n\nEntitytyp → Tabelle, PK = Primärschlüssel\n1:1 → FK + UNIQUE | 1:n → FK auf max=1-Seite\nm:n → Zwischentabelle, PK = FK_A + FK_B\nAbh. Entitytyp → FK ist Teil des PK\nNULL: min der FK-Seite!"
+    },
+    {
+      "id": "erd-rekonstruieren",
+      "title": "ERD aus logischem Modell rekonstruieren",
+      "icon": "🔁",
+      "category": "erd",
+      "kurzdefinition": "Das Rekonstruieren eines ERDs aus einem logischen Datenmodell ist die Umkehrrichtung des Entwurfs. Statt vom ERD zu Tabellen geht man von fertigen Tabellen (mit PKs, FKs, Constraints) zurück zum ERD. Jeder Fremdschlüssel entspricht einer Beziehung; Position, Constraints und PK-Rolle verraten Beziehungstyp, Kardinalität und Optionalität.",
+      "pruefungsrelevanz": "Steht explizit auf der Prüfungsliste. In der Prüfung kann ein logisches Modell in Attributschreibweise oder als DDL gegeben sein, und man muss das ERD rekonstruieren. Die Grenzen der Rekonstruktion sind ebenfalls prüfungsrelevant.",
+      "levels": {
+        "1": [
+          "Fünf Grundregeln: Tabelle ohne FK = starker Entitytyp. Jeder FK = Beziehung zur referenzierten Tabelle. FK ohne UNIQUE → 1:n, die FK-Tabelle ist die n-Seite (mit FK, also max=1 aus Sicht der anderen). FK mit UNIQUE → 1:1. Tabelle mit PK ausschließlich aus FKs → m:n-Beziehungstabelle.",
+          "Abhängiger Entitytyp erkennt man daran, dass ein FK gleichzeitig Teil des PKs ist (PK/FK) plus ein eigener Teilschlüssel."
+        ],
+        "2": [
+          "Aus den Constraints die Optionalität ableiten: NOT NULL beim FK → min=1 auf der FK-Seite. Nullable FK → min=0.",
+          "Für die Gegenseite (Tabelle ohne FK) ist der min-Wert aus dem logischen Modell allein NICHT eindeutig ableitbar. Ob eine Abteilung mindestens einen Angestellten haben muss, lässt sich aus der Tabelle nicht ablesen. Das ist eine semantische Information, die im logischen Modell verloren geht.",
+          "Abhängige Entitytypen herauslesen: Wenn ein FK gleichzeitig Teil des PKs ist, ist es ein abhängiger Entitytyp. Der FK zeigt auf den starken Entitytyp, der Teilschlüssel identifiziert die Instanz innerhalb des starken Entitytyps."
+        ],
+        "3": [
+          "Grenzen der Rekonstruktion kennen: Erstens ist der Beziehungsname verloren. Zweitens ist der min-Wert der Nicht-FK-Seite nicht eindeutig. Drittens kann es mehrere gültige ERDs geben, die dasselbe logische Modell erzeugen (z. B. bei 1:1 hätte der FK auf beide Seiten gelegt werden können).",
+          "Wer in der Prüfung min-Werte der Nicht-FK-Seite setzt, sollte wissen, dass das eine begründete Annahme ist, keine sichere Ableitung. Das Fragezeichen bei unbekanntem min ist fachlich korrekt und erwartet."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Einfache 1:n-Beziehung",
+          "code": "Abteilung(AbtNr, Name)\nAngestellter(SVN, Name, AbtNr > Abteilung NOT NULL)\n\n→ [Angestellter] --- (1,1) --- <gehört zu> --- (?,n) --- [Abteilung]",
+          "erklaerung": "AbtNr = FK ohne UNIQUE → 1:n. NOT NULL → Angestellter vollständig (min=1). Min der Abteilung-Seite NICHT ableitbar (Fragezeichen)."
+        },
+        {
+          "titel": "m:n mit Zwischentabelle",
+          "code": "Kurs(knr, bezeichn)\nReferent(pnr, gebdat)\ngeeignet(knr > Kurs NOT NULL, pnr > Referent NOT NULL)  PK: (knr, pnr)\n\n→ [Kurs] --- (1,n) --- <geeignet> --- (1,n) --- [Referent]",
+          "erklaerung": "PK aus zwei FKs ohne eigene Attribute → m:n-Beziehungstabelle. Beide FKs NOT NULL → beide min=1 ableitbar (Sonderfall: bei m:n-Tabellen sind beide min-Werte lesbar)."
+        },
+        {
+          "titel": "Abhängiger Entitytyp",
+          "code": "Kino(KinoNr, Name)\nSaal(KinoNr PK/FK > Kino NOT NULL, SaalNr PK)\n\n→ [Kino] --- (?,n) --- <hat Saal> --- (1,1) --- [Saal]",
+          "erklaerung": "KinoNr ist FK UND Teil des PK → abhängiger Entitytyp. Saal kann ohne Kino nicht identifiziert werden."
+        },
+        {
+          "titel": "1:1-Beziehung",
+          "code": "Mitarbeiter(MitarbeiterNr, Name)\nRestaurant(RestaurantNr, Name, MitarbeiterNr > Mitarbeiter NOT NULL UNIQUE)\n\n→ [Mitarbeiter] --- (?,1) --- <leitet> --- (1,1) --- [Restaurant]",
+          "erklaerung": "FK mit UNIQUE → 1:1. NOT NULL → Restaurant vollständig. Min der Mitarbeiter-Seite nicht ableitbar (aus Kontext: vermutlich 0)."
+        }
+      ],
+      "typische_fehler": [
+        "Grenzen übersehen: Den min-Wert der Nicht-FK-Seite aus der Tabelle ablesen, obwohl er dort nicht enthalten ist.",
+        "m:n-Tabelle und abhängigen Entitytyp verwechseln: m:n hat PK NUR aus FKs, abhängiger Entitytyp hat FK + eigenen Teilschlüssel.",
+        "UNIQUE bei 1:1 übersehen — fehlt UNIQUE im DDL trotz 1:1-ERD, ist es ein Implementierungsfehler.",
+        "FK-Richtung im ERD falsch interpretieren."
+      ],
+      "cheatsheet": "FK ohne UNIQUE → 1:n (FK-Tabelle = max=1-Seite)\nFK mit UNIQUE → 1:1\nPK = FK_A + FK_B → m:n-Beziehungstabelle\nPK = FK + Teilschlüssel → abhängiger Entitytyp\n\nFK NOT NULL → min=1 auf FK-Seite\nFK nullable → min=0\nNicht-FK-Seite: min NICHT eindeutig ableitbar!\n\nGrenzen: Beziehungsname verloren, min der\nNicht-FK-Seite offen, mehrere ERDs möglich"
+    }
+  ]
+}

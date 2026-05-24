@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DBI_1 Lernhub</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-logo" id="header-logo">DBI_1</div>
+    <div class="header-title" id="header-title">Lernhub</div>
+    <div class="header-badge" id="header-badge"></div>
+    <div class="header-spacer"></div>
+    <nav class="header-nav">
+      <button class="nav-btn" data-view="home">Themen</button>
+      <button class="nav-btn" data-view="sql">SQL</button>
+      <button class="nav-btn" data-view="testanalyse">Testanalyse</button>
+      <button class="nav-btn" data-view="quiz">Quiz</button>
+      <button class="nav-btn" data-view="drills">Drills</button>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside id="sidebar"></aside>
+
+  <!-- Main -->
+  <main id="main">
+
+    <!-- View: Home -->
+    <section id="view-home" class="view">
+      <div class="page-head">
+        <h1 id="home-title"></h1>
+        <p id="home-subtitle"></p>
+      </div>
+      <div class="topic-grid" id="topic-grid"></div>
+    </section>
+
+    <!-- View: Thema -->
+    <section id="view-topic" class="view">
+      <div class="topic-header">
+        <div class="topic-icon-big" id="topic-icon"></div>
+        <div class="topic-header-text">
+          <h1 id="topic-title"></h1>
+          <div class="topic-pruefung" id="topic-pruefung"></div>
+        </div>
+      </div>
+
+      <div class="level-tabs">
+        <button class="level-tab" data-level="1">Level 1 — 4er</button>
+        <button class="level-tab" data-level="2">Level 2 — Standard</button>
+        <button class="level-tab" data-level="3">Level 3 — 1er</button>
+      </div>
+
+      <div class="level-content" data-level="1"></div>
+      <div class="level-content" data-level="2"></div>
+      <div class="level-content" data-level="3"></div>
+
+      <div class="section-block" id="topic-beispiele"></div>
+      <div class="section-block" id="topic-fehler"></div>
+
+      <div class="cheatsheet-block">
+        <h3>⚡ Mini-Cheatsheet</h3>
+        <pre id="topic-cheatsheet"></pre>
+      </div>
+    </section>
+
+    <!-- View: SQL -->
+    <section id="view-sql" class="view">
+      <div class="page-head">
+        <h1 id="sql-title"></h1>
+        <p id="sql-subtitle"></p>
+      </div>
+      <div class="sql-tabs">
+        <button class="sql-tab active" data-sqltab="schemas">Tabellen (DDL)</button>
+        <button class="sql-tab" data-sqltab="queries">Abfragen</button>
+      </div>
+      <div class="sql-panel" id="sql-schemas"></div>
+      <div class="sql-panel" id="sql-queries"></div>
+    </section>
+
+    <!-- View: Testanalyse -->
+    <section id="view-testanalyse" class="view">
+      <div class="page-head">
+        <h1 id="test-title"></h1>
+        <p id="test-subtitle"></p>
+      </div>
+      <div class="test-note" id="test-note"></div>
+      <div id="test-list"></div>
+    </section>
+
+    <!-- View: Quiz -->
+    <section id="view-quiz" class="view">
+      <div class="quiz-header">
+        <h1>Prüfungsfragen</h1>
+        <div class="quiz-progress-wrap">
+          <div class="quiz-progress-bar">
+            <div class="quiz-progress-fill" id="quiz-progress-fill"></div>
+          </div>
+          <div class="quiz-meta" id="quiz-progress-meta"></div>
+        </div>
+      </div>
+
+      <div class="quiz-score-bar" id="score-bar">
+        <div class="score-item"><div class="score-num correct" data-score="correct">0</div><div class="score-label">Gewusst</div></div>
+        <div class="score-sep"></div>
+        <div class="score-item"><div class="score-num wrong" data-score="wrong">0</div><div class="score-label">Nicht gewusst</div></div>
+        <div class="score-sep"></div>
+        <div class="score-item"><div class="score-num pending" data-score="pending">0</div><div class="score-label">Offen</div></div>
+      </div>
+
+      <div class="quiz-filter" id="quiz-filter"></div>
+      <div id="quiz-questions"></div>
+    </section>
+
+    <!-- View: Drills -->
+    <section id="view-drills" class="view">
+      <div class="page-head">
+        <h1>🎯 Mini-Drills</h1>
+        <p>Letzte 10 Minuten vor der Prüfung. Jede Frage in max. 10 Sekunden beantworten. Klick zum Aufdecken.</p>
+      </div>
+      <div id="drills-list"></div>
+      <div class="checklist-wrap" id="checklist-wrap"></div>
+    </section>
+
+  </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

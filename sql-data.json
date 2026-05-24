@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "title": "SQL-Sammlung",
+    "beschreibung": "Alle Tabellenschemata (DDL) und Beispielabfragen aus dem Unterricht und den Unterlagen. Verwendet die Originaldaten: Lieferant/Teil (l, t, lt), Schulungsfirma (kurs, referent, geeignet), happysushi (Angestellter, untersteht), Person/Schule (besucht), Kino/Saal/Vorstellung."
+  },
+  "schemas": [
+    {
+      "id": "lieferant-teil",
+      "titel": "Lieferant / Teil (l, t, lt)",
+      "beschreibung": "Das zentrale m:n-Beispiel aus dem Unterricht. lt ist die Zwischentabelle mit dem Beziehungsattribut menge.",
+      "ddl": "-- Erst die unabhängigen Tabellen\ncreate table l (\n  lnr    varchar(2)   not null primary key\n, lname  varchar(6)   not null\n, rabatt decimal(3)   not null default 15\n, stadt  varchar(6)   not null default 'Wien'\n);\n\ncreate table t (\n  tnr    varchar(2)   not null primary key\n, tname  varchar(8)   not null\n, farbe  varchar(5)   not null\n, preis  decimal(4,2) not null\n);\n\n-- Dann die Zwischentabelle (m:n)\ncreate table lt (\n  lnr    varchar(2)  not null references l   -- FK auf Lieferant\n, tnr    varchar(2)  not null references t   -- FK auf Teil\n, menge  decimal(4)  not null check(menge > 0)  -- Beziehungsattribut\n, primary key (lnr, tnr)   -- zusammengesetzter PK\n);"
+    },
+    {
+      "id": "schulungsfirma",
+      "titel": "Schulungsfirma (kurs, referent, geeignet)",
+      "beschreibung": "m:n-Beispiel ohne Beziehungsattribut. geeignet verbindet Kurs und Referent.",
+      "ddl": "create table kurs (\n  knr      integer     not null primary key\n, bezeichn varchar(20) not null\n, tage     integer     not null\n, preis    decimal(8,2)\n);\n\ncreate table referent (\n  pnr     integer  not null primary key\n, gebdat  date     not null\n, seit    date     not null\n, titel   varchar(20)\n);\n\ncreate table geeignet (\n  knr  integer  not null references kurs      -- FK auf kurs\n, pnr  integer  not null references referent  -- FK auf referent\n, primary key (knr, pnr)   -- zusammengesetzter PK\n);"
+    },
+    {
+      "id": "happysushi",
+      "titel": "happysushi (Angestellter, untersteht)",
+      "beschreibung": "Rekursive m:n-Beziehung: Ein Angestellter kann mehreren Vorgesetzten unterstehen und selbst mehrere Untergebene haben.",
+      "ddl": "create table Angestellter (\n  SVN      varchar(10)  not null primary key\n, Vorname  varchar(16)  not null\n, Nachname varchar(16)  not null\n);\n\n-- Rekursive m:n: beide FKs zeigen auf Angestellter\ncreate table untersteht (\n  SVN       varchar(10)  not null references Angestellter  -- der Untergebene\n, LeiterSVN varchar(10)  not null references Angestellter  -- der Vorgesetzte\n, primary key (SVN, LeiterSVN)\n);"
+    },
+    {
+      "id": "person-schule",
+      "titel": "Person / Schule (besucht)",
+      "beschreibung": "m:n mit zwei Beziehungsattributen (Monate, Kosten) und CHECK-Constraint.",
+      "ddl": "create table person (\n  SVN      float        not null primary key\n, Vorname  varchar(32)  not null\n, Nachname varchar(32)  not null\n);\n\ncreate table schule (\n  SchulNr     integer      not null primary key\n, Bezeichnung varchar(32)  not null\n, Schultyp    varchar(20)  not null\n);\n\ncreate table besucht (\n  SVN     float        not null references person\n, SchulNr integer      not null references schule\n, Monate  integer      not null\n, Kosten  decimal(5,2)  not null check(Kosten >= 0 and Kosten <= 100000)\n, primary key (SVN, SchulNr)\n);"
+    },
+    {
+      "id": "kino",
+      "titel": "Kino / Saal / Vorstellung",
+      "beschreibung": "Mehrstufige Abhängigkeit (Testanalyse Aufgabe 5). Saal abhängig von Kino, Vorstellung abhängig von Saal. Zusammengesetzte FKs.",
+      "ddl": "-- Starker Entitytyp zuerst\ncreate table Kino (\n  KinoNr  integer      not null primary key\n, Name    varchar(32)  not null\n);\n\n-- Abhängiger Entitytyp: FK zuerst, Teil des PK\ncreate table Saal (\n  KinoNr  integer  not null references Kino   -- FK = Teil des PK\n, SaalNr  integer  not null                   -- Teilschlüssel\n, primary key (KinoNr, SaalNr)\n);\n\n-- Abhängig von Saal: zusammengesetzter FK\ncreate table Vorstellung (\n  KinoNr           integer   not null\n, SaalNr           integer   not null\n, Beginnzeitpunkt  datetime  not null\n, primary key (KinoNr, SaalNr, Beginnzeitpunkt)\n, foreign key (KinoNr, SaalNr) references Saal(KinoNr, SaalNr)\n);"
+    }
+  ],
+  "queries": [
+    {
+      "id": "q-in-t1",
+      "titel": "Lieferanten, die Teil T1 liefern (IN)",
+      "kategorie": "IN / EXISTS",
+      "sql": "select lnr, lname\n  from l\n where lnr in (\n   select lnr\n     from lt\n    where tnr = 'T1'\n);",
+      "erklaerung": "IN prüft, ob die lnr in der Ergebnismenge der Unterabfrage vorkommt. Nicht korreliert."
+    },
+    {
+      "id": "q-exists-t1",
+      "titel": "Lieferanten, die T1 liefern (EXISTS, korreliert)",
+      "kategorie": "IN / EXISTS",
+      "sql": "select l.lnr, l.lname\n  from l\n where exists (\n   select *\n     from lt\n    where lt.lnr = l.lnr   -- korreliert!\n      and lt.tnr = 'T1'\n);",
+      "erklaerung": "EXISTS mit Korrelationsverweis lt.lnr = l.lnr. Prüft für jeden Lieferanten, ob er T1 liefert."
+    },
+    {
+      "id": "q-t1-und-t2",
+      "titel": "Lieferanten, die T1 UND T2 liefern (Aufgabe 12)",
+      "kategorie": "IN / EXISTS",
+      "sql": "-- KORREKT: zwei separate Unterabfragen\nselect lnr, lname\n  from l\n where lnr in (select lnr from lt where tnr = 'T1')\n   and lnr in (select lnr from lt where tnr = 'T2');\n\n-- FALSCH (immer leer):\n-- select lnr from lt where tnr='T1' and tnr='T2';",
+      "erklaerung": "Eine Zeile kann nicht gleichzeitig T1 und T2 sein. Zwei Unterabfragen mit AND lösen das."
+    },
+    {
+      "id": "q-not-exists",
+      "titel": "Lieferanten ohne jede Lieferung (NOT EXISTS)",
+      "kategorie": "IN / EXISTS",
+      "sql": "select lnr, lname\n  from l\n where not exists (\n   select *\n     from lt\n    where lt.lnr = l.lnr\n);",
+      "erklaerung": "NOT EXISTS liefert Lieferanten, für die keine Zeile in lt existiert. Sicher bei NULL (anders als NOT IN)."
+    },
+    {
+      "id": "q-all",
+      "titel": "Teile teurer als das teuerste rote Teil (ALL)",
+      "kategorie": "ALL / SOME",
+      "sql": "select *\n  from t\n where preis > all (\n   select preis\n     from t\n    where farbe = 'rot'\n);",
+      "erklaerung": "> ALL = größer als alle roten Preise = größer als das Maximum. Rote Preise 12,14,19 → preis > 19."
+    },
+    {
+      "id": "q-some",
+      "titel": "Teile teurer als das billigste rote Teil (SOME)",
+      "kategorie": "ALL / SOME",
+      "sql": "select *\n  from t\n where preis > some (\n   select preis\n     from t\n    where farbe = 'rot'\n);",
+      "erklaerung": "> SOME = größer als mindestens einen roten Preis = größer als das Minimum. Rote Preise 12,14,19 → preis > 12."
+    },
+    {
+      "id": "q-max",
+      "titel": "Teile teurer als das teuerste rote Teil (MAX, Variante)",
+      "kategorie": "Unterabfragen",
+      "sql": "select *\n  from t\n where preis > (\n   select max(preis)\n     from t\n    where farbe = 'rot'\n);",
+      "erklaerung": "Semantisch identisch zu > ALL. MAX reduziert die Menge auf einen Einzelwert, deshalb funktioniert der einfache Vergleich."
+    },
+    {
+      "id": "q-korreliert-select",
+      "titel": "Anzahl Lieferungen pro Lieferant (korreliert in SELECT)",
+      "kategorie": "Korreliert",
+      "sql": "select lnr, lname\n     , (select count(*)\n          from lt\n         where lt.lnr = l.lnr   -- korreliert\n       ) \"#lieferungen\"\n  from l;",
+      "erklaerung": "Korrelierte Unterabfrage in der SELECT-Liste. Berechnet pro Zeile die Anzahl der Lieferungen."
+    },
+    {
+      "id": "q-left-join-null",
+      "titel": "Teile, die nie geliefert wurden (LEFT JOIN + IS NULL)",
+      "kategorie": "OUTER JOIN",
+      "sql": "select t.tnr, t.tname\n  from t\n  left join lt on t.tnr = lt.tnr\n where lt.tnr is null;",
+      "erklaerung": "LEFT JOIN behält alle Teile. Teile ohne Eintrag in lt haben lt.tnr = NULL. IS NULL filtert genau diese."
+    },
+    {
+      "id": "q-left-join-count",
+      "titel": "Lieferungen pro Lieferant inkl. 0 (LEFT JOIN + count)",
+      "kategorie": "OUTER JOIN",
+      "sql": "select l.lnr, l.lname, count(lt.tnr) \"#lieferungen\"\n  from l\n  left join lt on l.lnr = lt.lnr\n group by l.lnr, l.lname\norder by \"#lieferungen\" desc;",
+      "erklaerung": "count(lt.tnr) statt count(*): zählt nur echte Treffer. Lieferanten ohne Lieferungen erhalten 0, nicht 1."
+    },
+    {
+      "id": "q-union",
+      "titel": "Lieferanten, die T1 ODER T2 liefern (UNION)",
+      "kategorie": "Mengenoperationen",
+      "sql": "(select lnr from lt where tnr = 'T1')\nunion\n(select lnr from lt where tnr = 'T2')\norder by lnr;",
+      "erklaerung": "UNION entfernt Duplikate: Ein Lieferant, der beide liefert, erscheint nur einmal. ORDER BY am Ende."
+    },
+    {
+      "id": "q-intersect",
+      "titel": "Lieferanten, die T1 UND T2 liefern (INTERSECT)",
+      "kategorie": "Mengenoperationen",
+      "sql": "(select lnr from lt where tnr = 'T1')\nintersect\n(select lnr from lt where tnr = 'T2');",
+      "erklaerung": "INTERSECT liefert nur Lieferanten, die in beiden Mengen vorkommen. Äquivalent zu doppeltem IN."
+    },
+    {
+      "id": "q-except",
+      "titel": "Lieferanten, die T1 aber NICHT T2 liefern (EXCEPT)",
+      "kategorie": "Mengenoperationen",
+      "sql": "(select lnr from lt where tnr = 'T1')\nexcept\n(select lnr from lt where tnr = 'T2');",
+      "erklaerung": "EXCEPT = T1-Menge minus T2-Menge. Reihenfolge entscheidend: vertauscht ergibt sich 'T2 aber nicht T1'."
+    },
+    {
+      "id": "q-recursive",
+      "titel": "Untergebene pro Vorgesetzten (untersteht, rekursiv)",
+      "kategorie": "Korreliert",
+      "sql": "select a.Nachname, a.Vorname\n     , (select count(*)\n          from untersteht u\n         where u.LeiterSVN = a.SVN\n       ) \"#Untergebene\"\n  from Angestellter a\n order by \"#Untergebene\" desc;",
+      "erklaerung": "Rekursive Beziehung: Die untersteht-Tabelle wird über LeiterSVN korreliert abgefragt."
+    }
+  ]
+}

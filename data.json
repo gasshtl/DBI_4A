@@ -1,0 +1,834 @@
+{
+  "meta": {
+    "title": "DBI_1 Lernhub",
+    "subtitle": "Wiederholungstest 28.05.2026",
+    "fach": "DBI_1",
+    "lehrer": "BUGU / Burgstaller",
+    "klasse": "4AYIFT"
+  },
+  "categories": [
+    { "id": "erd",            "label": "ERD & Modellierung" },
+    { "id": "implementierung", "label": "Implementierung" },
+    { "id": "sql",            "label": "SQL" },
+    { "id": "wiederholung",   "label": "Wiederholung" }
+  ],
+  "topics": [
+    {
+      "id": "konzeptionelles-datendesign",
+      "title": "Konzeptionelles Datendesign",
+      "icon": "🗺️",
+      "category": "erd",
+      "pruefungsrelevanz": "Grundlage für alle ERD-Aufgaben. Die Phasen 2–4 sind direkt prüfungsrelevant, weil jede Aufgabe einen Schritt innerhalb dieses Ablaufs abfragt.",
+      "levels": {
+        "1": [
+          "Der Datenbankentwurf läuft in festen Phasen ab. Für die Prüfung sind drei davon zentral: Phase 2 ist der **konzeptionelle Entwurf** (das ERD), Phase 3 ist der **logische Entwurf** (Tabellenstruktur mit PKs und FKs), Phase 4 ist die **DDL** (CREATE TABLE in SQL).",
+          "Jede Phase hat ein klares Ziel: Phase 2 beschreibt, WAS gespeichert wird, ohne sich um Technik zu kümmern. Phase 3 übersetzt das in Tabellen. Phase 4 schreibt den ausführbaren SQL-Code.",
+          "Die Reihenfolge ist nicht umkehrbar: Man kann keine DDL schreiben, ohne vorher das logische Modell zu haben, und kein logisches Modell ohne ERD."
+        ],
+        "2": [
+          "Im konzeptionellen Entwurf (Phase 2) modelliert man Entitytypen, Attribute und Beziehungstypen mit Kardinalitäten in Chen-(min,max)-Notation. Hier gibt es noch keine Fremdschlüssel und kein SQL — nur die fachliche Struktur.",
+          "Der Übergang zu Phase 3 (logisches Modell) ist mechanisch: Jeder Entitytyp wird zu einer Tabelle. Der Beziehungstyp (1:1, 1:n, m:n) bestimmt, wo der Fremdschlüssel landet, ob ein UNIQUE-Constraint nötig ist und ob eine eigene Zwischentabelle entsteht.",
+          "Phase 4 setzt das logische Modell als CREATE TABLE um. Erst hier entscheidet man über konkrete Datentypen (varchar, integer, decimal), NOT NULL, DEFAULT und CHECK-Constraints."
+        ],
+        "3": [
+          "Für eine 1 musst du die Phasen nicht nur benennen, sondern Entscheidungen begründen können. Beispiel: Warum entsteht bei m:n eine eigene Tabelle erst in Phase 3 und nicht schon in Phase 2? Weil das ERD nur die fachliche Beziehung beschreibt — die technische Notwendigkeit einer Zwischentabelle ist eine Konsequenz der relationalen Umsetzung.",
+          "Ein häufiges 1er-Thema ist die Trennung der Verantwortlichkeiten: Datentypen gehören NICHT ins ERD (Phase 2), sondern erst in die DDL (Phase 4). Wer im ERD schon varchar(20) schreibt, vermischt die Phasen."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Vom ERD zur Tabelle (Schulungsfirma)",
+          "text": "Anforderung: Ein Kurs kann von mehreren Referenten gehalten werden, ein Referent kann mehrere Kurse halten.",
+          "code": "Phase 2 (ERD):\n[Kurs] --- (0,n) --- <geeignet> --- (1,n) --- [Referent]\n\nPhase 3 (logisches Modell):\nKurs(knr, bezeichn, tage, preis)\nReferent(pnr > Person, gebdat, seit, titel)\ngeeignet(knr > Kurs, pnr > Referent)\n\nPhase 4 (DDL): siehe SQL-Bereich"
+        }
+      ],
+      "fehler": [
+        "Datentypen schon im ERD festlegen — die gehören erst in Phase 4.",
+        "Fremdschlüssel im ERD einzeichnen — FKs entstehen erst in Phase 3.",
+        "DDL schreiben ohne vorher das logische Modell zu erstellen."
+      ],
+      "cheatsheet": "Phase 2: ERD (konzeptionell, kein SQL)\nPhase 3: Logisches Modell (Tabellen, PK, FK)\nPhase 4: DDL (CREATE TABLE)\n\nEntitytyp → Tabelle\n1:1 → FK + UNIQUE\n1:n → FK auf max=1-Seite\nm:n → Zwischentabelle"
+    },
+    {
+      "id": "erd-lesen",
+      "title": "ERD lesen",
+      "icon": "🔍",
+      "category": "erd",
+      "pruefungsrelevanz": "Grundkompetenz für nahezu alle Prüfungsaufgaben. Wer Kardinalitäten falsch liest, macht Folgefehler bei FK-Platzierung, NULL/NOT NULL und Beziehungstyp. Häufigste Fehlerquelle laut Testanalyse.",
+      "levels": {
+        "1": [
+          "Der **min-Wert** ist die untere Schranke: Wie oft MUSS ein Entitytyp mindestens teilnehmen? min=0 bedeutet optional (darf, muss nicht), min=1 bedeutet verpflichtend (muss).",
+          "Der **max-Wert** ist die obere Schranke: Wie oft DARF ein Entitytyp höchstens teilnehmen? max=1 bedeutet höchstens einmal, max=n bedeutet beliebig oft.",
+          "Das Wertepaar (min,max) steht immer direkt neben dem Entitytyp, den es beschreibt — nicht neben der Raute. Die vier Standardkombinationen: (0,1), (1,1), (0,n), (1,n)."
+        ],
+        "2": [
+          "Den Beziehungstyp liest man ausschließlich aus den max-Werten ab: beide max=1 → 1:1, ein max=n → 1:n, beide max=n → m:n. Die min-Werte spielen für den Typ keine Rolle.",
+          "Vollständige Teilnahme (min=1) bedeutet im logischen Modell NOT NULL beim FK. Teilweise Teilnahme (min=0) bedeutet nullable.",
+          "Lesemethode: Für jede Beziehung zwei deutsche Sätze bilden, je einen pro Richtung. Bei [A]---(1,n)---<ab>---(0,1)---[B]: 'Ein A nimmt mindestens einmal bis beliebig oft teil' und 'Ein B nimmt null- oder einmal teil'."
+        ],
+        "3": [
+          "Für eine 1 musst du begründen können, warum eine Kardinalität so gewählt wurde, und Daten erkennen, die das ERD NICHT speichern kann. Beispiel: Bei [Kurs]---(1,n)---<geeignet>---(0,n)---[Referent] kann ein Kurs ohne Referent NICHT gespeichert werden (min=1 auf Kurs-Seite).",
+          "Falle: Nur weil ein Entitytyp mit (1,1) teilnimmt, ist er noch KEIN abhängiger Entitytyp. (1,1) beschreibt nur die Teilnahmevorschrift. Abhängig ist er erst, wenn der FK Teil des PKs ist.",
+          "Grenzfall max=3: 'Ein Angestellter verantwortet höchstens 3 Projekte' → (0,3). Das ändert den Beziehungstyp nicht — es bleibt 1:n, weil Projekt max=1 hat. Die 3 ist eine zusätzliche Geschäftsregel."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "1:n mit vollständiger Teilnahme",
+          "text": "Jeder Angestellte gehört zu genau einer Abteilung, jede Abteilung hat mindestens einen Angestellten.",
+          "code": "[Angestellter] --- (1,1) --- <gehört zu> --- (1,n) --- [Abteilung]\n\nLinks: Angestellter (1,1) → muss, genau eine Abteilung\nRechts: Abteilung (1,n) → muss, beliebig viele Angestellte\nBeziehungstyp: max=1 + max=n → 1:n\nFK in Angestellter (max=1-Seite), NOT NULL (min=1)"
+        },
+        {
+          "titel": "1:1 mit optionaler Seite",
+          "text": "Ein Mitarbeiter leitet höchstens ein Restaurant, jedes Restaurant hat genau einen Leiter.",
+          "code": "[Mitarbeiter] --- (0,1) --- <leitet> --- (1,1) --- [Restaurant]\n\nMitarbeiter (0,1) → optional, höchstens eines\nRestaurant (1,1) → verpflichtend, genau einer\nBeziehungstyp: beide max=1 → 1:1\nFK in Restaurant (vollständige Seite), NOT NULL + UNIQUE"
+        }
+      ],
+      "fehler": [
+        "Seiten-Verwechslung: Die Kardinalität neben A beschreibt A, nicht B.",
+        "Beziehungstyp nach min-Wert bestimmen — nur der max-Wert entscheidet.",
+        "Vollständige (min=1) und teilweise (min=0) Teilnahme verwechseln.",
+        "(1,1)-Teilnahme automatisch als abhängigen Entitytyp deuten."
+      ],
+      "cheatsheet": "(0,1) optional, max. 1\n(1,1) verpflichtend, genau 1\n(0,n) optional, beliebig viele\n(1,n) verpflichtend, beliebig viele\n\nBeziehungstyp: NUR max-Werte!\nbeide max=1 → 1:1\nein max=n → 1:n\nbeide max=n → m:n\n\nWertepaar steht NEBEN dem Entitytyp!"
+    },
+    {
+      "id": "chen-notation",
+      "title": "Chen-(min,max)-Notation",
+      "icon": "📌",
+      "category": "erd",
+      "pruefungsrelevanz": "Grundlage jeder ERD-Aufgabe. Die Verwechslung, welches (min,max) zu welchem Entitytyp gehört, war laut Testanalyse die häufigste Fehlerquelle.",
+      "levels": {
+        "1": [
+          "Die vier Standardkombinationen musst du auswendig beherrschen: (0,1) = optional, höchstens 1 Partner. (1,1) = verpflichtend, genau 1. (0,n) = optional, 0 bis viele. (1,n) = verpflichtend, mindestens 1 bis viele.",
+          "Der min-Wert beantwortet: 'Muss dieser Entitytyp teilnehmen?' Der max-Wert beantwortet: 'Wie viele Partner kann er maximal haben?' Diese beiden Fragen getrennt zu halten ist der Schlüssel zum fehlerfreien Lesen.",
+          "Der Beziehungstyp ergibt sich ausschließlich aus den max-Werten. Die min-Werte bestimmen nur, ob die Teilnahme optional oder verpflichtend ist."
+        ],
+        "2": [
+          "Vollständige Teilnahme (min=1) bedeutet: Der Entitytyp kann in der Datenbank NICHT ohne Partnerdatensatz existieren. Im logischen Modell wird der FK NOT NULL.",
+          "Teilweise Teilnahme (min=0) bedeutet: Der Entitytyp DARF ohne Partnerdatensatz existieren. Im logischen Modell darf der FK NULL sein.",
+          "Die kritische DDL-Konsequenz: Ob ein FK NOT NULL ist, hängt vom min-Wert der Seite ab, die den FK enthält. Das war eine explizite Prüfungsaufgabe (Aufgaben 1, 2, 6, 7 der Testanalyse).",
+          "Die Kardinalität steht immer neben dem Entitytyp, den sie beschreibt. Bei [A]---(1,n)---<ab>---(0,1)---[B] beschreibt (1,n) die Teilnahme von A und (0,1) die von B. Der FK kommt in B (Seite mit max=1)."
+        ],
+        "3": [
+          "Für eine 1 musst du selbst eine Notation aus einer Anforderung schreiben und begründen. Beispiel: 'Ein Angestellter darf höchstens drei Projekte verantworten, jedes Projekt hat genau einen Verantwortlichen' → [Angestellter]---(0,3)---<verantwortet>---(1,1)---[Projekt].",
+          "Der Wert 3 ist eine konkrete Geschäftsregel als obere Schranke. Der Beziehungstyp bleibt 1:n, weil Projekt max=1 hat und Angestellter max=3 (also endlich und >1, was sich wie n verhält).",
+          "Rekursive Beziehung: Ein Entitytyp hat eine Beziehung mit sich selbst. [Kurs]---(0,n)---<setzt voraus>---(0,n)---[Kurs]. Beide Kardinalitäten beschreiben Kurs in verschiedenen Rollen (voraussetzend vs. vorausgesetzt). Das ist m:n.",
+          "Mehrwertiger (ternärer) Beziehungstyp: In der schriftlichen Chen-Notation gibt es keine einzeilige Form. Man schreibt alle Teilnahmen getrennt an die Raute. Das Maximum ist immer n, es entsteht immer eine eigene Tabelle."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "m:n, beide optional",
+          "text": "Ein Angestellter arbeitet an null bis vielen Projekten, jedes Projekt hat mindestens einen Angestellten.",
+          "code": "[Angestellter] --- (0,n) --- <arbeitet an> --- (1,n) --- [Projekt]\n\nBeide max=n → m:n\nLogisches Modell: eigene Zwischentabelle\nbearbeitet(ANr > Angestellter, PNr > Projekt)"
+        },
+        {
+          "titel": "Konkrete Obergrenze (Grenzfall)",
+          "text": "Ein Angestellter verantwortet höchstens drei Projekte.",
+          "code": "[Angestellter] --- (0,3) --- <verantwortet> --- (1,1) --- [Projekt]\n\nmax_Angestellter=3, max_Projekt=1 → 1:n\n(Die 3 ist eine Geschäftsregel, ändert den Typ nicht)\nFK in Projekt (max=1-Seite), NOT NULL (min=1)"
+        }
+      ],
+      "fehler": [
+        "Seitenverwechslung: Das Wertepaar neben A beschreibt A, nicht B.",
+        "min-Wert mit Beziehungstyp verwechseln — nur max zählt für den Typ.",
+        "UNIQUE bei 1:n setzen — macht es technisch zu 1:1.",
+        "NOT NULL bei (0,1) setzen — widerspricht der optionalen Teilnahme."
+      ],
+      "cheatsheet": "Wertepaar steht NEBEN dem Entitytyp!\n\nmin=0 → optional → FK NULL erlaubt\nmin=1 → verpflichtend → FK NOT NULL\nmax=1 → 1-Seite beim Beziehungstyp\nmax=n → n-Seite beim Beziehungstyp\n\nBeziehungstyp (NUR max zählt!):\nbeide max=1 → 1:1 → FK + UNIQUE\nein max=n → 1:n → FK auf max=1-Seite\nbeide max=n → m:n → Zwischentabelle"
+    },
+    {
+      "id": "kraehenfuss",
+      "title": "Krähenfußnotation",
+      "icon": "🐾",
+      "category": "erd",
+      "pruefungsrelevanz": "Aufgabe 8 der Testanalyse: Produkt/Kategorie in Krähenfuß zeichnen. Lesen und Umwandeln in beide Richtungen ist prüfungsrelevant.",
+      "levels": {
+        "1": [
+          "Die Krähenfußnotation verwendet grafische Symbole an den Linienenden statt Zahlenpaare. Der Name kommt vom 'viele'-Symbol, das wie ein Vogelfuß mit drei Zehen aussieht.",
+          "Drei Bausteine: Kreis (o) = 0 = optional. Strich (|) = 1 = verpflichtend. Krähenfuß (<) = n = viele. Aus diesen drei Teilen setzen sich alle Symbole zusammen.",
+          "Die vier Symbole: || = (1,1) genau eins. o| = (0,1) null oder eins. ||< = (1,n) ein oder viele. o< = (0,n) null oder viele."
+        ],
+        "2": [
+          "Das Symbol hat immer zwei Teile. Der Teil näher an der Linie ist das Minimum (Kreis=0 oder Strich=1), der Teil näher am Entitytyp ist das Maximum (Strich=1 oder Krähenfuß=n).",
+          "Umwandlung Chen → Krähenfuß: min=0→o, min=1→|, max=1→|, max=n→<. Reihenfolge: Minimum zuerst, Maximum direkt am Entitytyp.",
+          "Umwandlung Krähenfuß → Chen: spiegelbildlich lesen. Beide Notationen codieren dieselbe Information (min und max), nur unterschiedlich."
+        ],
+        "3": [
+          "Für eine 1 musst du erklären können, warum die Krähenfußnotation keine konkrete Obergrenze wie (0,3) darstellen kann: Es gibt nur Strich (=1) oder Krähenfuß (=viele), kein Symbol für 'höchstens drei'.",
+          "Die Lösung in der Praxis: das 'viele'-Symbol o< verwenden und die Einschränkung als Textanmerkung an die Linie schreiben. Das zeigt eine grundsätzliche Grenze der Krähenfußnotation: grafisch intuitiver, aber weniger präzise als Chen.",
+          "Du musst auch erklären können, warum beide Notationen dasselbe ERD beschreiben: Die Information (min, max) ist in beiden enthalten, nur die Codierung ist verschieden."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "1:n, beide verpflichtend",
+          "text": "Jeder Angestellte gehört zu genau einer Abteilung, jede Abteilung hat mindestens einen Angestellten.",
+          "code": "Chen:       [Angestellter] (1,1)---<gehört zu>---(1,n) [Abteilung]\nKrähenfuß:  Angestellter ||----||< Abteilung\n\n|| = genau eins (Abteilungs-Seite)\n||< = ein oder viele (Angestellten-Seite)"
+        },
+        {
+          "titel": "1:n mit optionaler n-Seite (Testanalyse Aufgabe 8)",
+          "text": "Jedes Produkt gehört zu genau einer Kategorie, eine Kategorie kann null bis viele Produkte haben.",
+          "code": "Chen:       [Produkt] (1,1)---<gehört zu>---(0,n) [Kategorie]\nKrähenfuß:  Kategorie ||----o< Produkt\n\n|| bei Kategorie: jedes Produkt gehört zu genau 1 Kategorie\no< bei Produkt: eine Kategorie hat 0 bis viele Produkte"
+        }
+      ],
+      "fehler": [
+        "Lesedirektion verwechseln: Max-Symbol ist am Entitytyp, Min-Symbol näher zur Linie.",
+        "Symbol auf der falschen Seite platzieren bei der Umwandlung.",
+        "Mindestteil vergessen — man braucht immer beide Teile (Kreis/Strich + Strich/Krähenfuß)."
+      ],
+      "cheatsheet": "|| = (1,1) genau eins\no| = (0,1) null oder eins\n||< = (1,n) ein oder viele\no< = (0,n) null oder viele\n\nMin (zur Linie): o=0, |=1\nMax (am Entitytyp): |=1, <=n\n\nChen → Krähenfuß:\nmin=0→o | min=1→| | max=1→| | max=n→<"
+    },
+    {
+      "id": "umwandlung",
+      "title": "Chen ↔ Krähenfuß umwandeln",
+      "icon": "🔄",
+      "category": "erd",
+      "pruefungsrelevanz": "Direktes Testaufgabenformat (Aufgabe 8). Umwandlung in beide Richtungen mit FK-Ableitung.",
+      "levels": {
+        "1": [
+          "Beide Notationen beschreiben dasselbe ERD. Jedes (min,max)-Paar entspricht genau einem Krähenfuß-Symbol und umgekehrt — die Umwandlung ist rein mechanisch.",
+          "Die Bausteine: min=0→Kreis(o), min=1→Strich(|), max=1→Strich(|), max=n→Krähenfuß(<). Das Symbol steht neben dem Entitytyp, den es beschreibt.",
+          "Die vier Paare: (1,1)↔|| | (0,1)↔o| | (1,n)↔||< | (0,n)↔o<"
+        ],
+        "2": [
+          "Chen → Krähenfuß in vier Schritten: 1) (min,max)-Paar von A lesen. 2) min und max in Symbole übersetzen. 3) Symbol zusammensetzen (Minimum zur Linie, Maximum am Entitytyp). 4) Für B wiederholen.",
+          "Krähenfuß → Chen: Symbol am Entitytyp = Maximum, Symbol zur Linie = Minimum. Übersetzen und als (min,max) zusammensetzen.",
+          "Nach jeder Umwandlung die FK-Konsequenz ableiten: Welche Seite hat max=1? Dort kommt der FK hin. min der FK-Seite entscheidet über NOT NULL."
+        ],
+        "3": [
+          "Für eine 1: Grenzfall (0,3) hat kein exaktes Krähenfuß-Äquivalent. Man nähert mit o< an und schreibt 'max. 3' als Anmerkung. Das ist ein Informationsverlust, der erklärt werden muss.",
+          "Rekursive Umwandlung: [Kurs]---(0,n)---<setzt voraus>---(0,n)---[Kurs] wird zu Kurs o<----o< Kurs, wobei die Leserichtung der Symbole beachtet werden muss.",
+          "Die Umwandlung ist kein Selbstzweck — sie ist der Ausgangspunkt für die DDL. Wer nach der Umwandlung nicht sagen kann, wohin der FK kommt, hat sie nur mechanisch durchgeführt."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Chen → Krähenfuß (1:1 mit optionaler Seite)",
+          "text": "Mitarbeiter leitet höchstens ein Restaurant, jedes Restaurant hat genau einen Leiter.",
+          "code": "Chen: [Mitarbeiter] (0,1)---<leitet>---(1,1) [Restaurant]\n\nUmwandlung:\n  Mitarbeiter (0,1): min=0→o, max=1→|  →  o|\n  Restaurant  (1,1): min=1→|, max=1→|  →  ||\n\nKrähenfuß: Mitarbeiter o|----|| Restaurant"
+        },
+        {
+          "titel": "Krähenfuß → Chen mit FK-Ableitung",
+          "text": "Rückumwandlung und Bestimmung von FK, NOT NULL und Beziehungstyp.",
+          "code": "Krähenfuß: Kino ||----||< Saal\n\nUmwandlung:\n  Kino ||:  |=min=1, |=max=1  →  (1,1)\n  Saal ||<: |=min=1, <=max=n  →  (1,n)\n\nChen: [Kino] (1,1)---<hat>---(1,n) [Saal]\nBeziehungstyp: 1:n → FK in Saal (n-Seite), NOT NULL"
+        }
+      ],
+      "fehler": [
+        "Symbol-Reihenfolge verwechseln (<| statt ||<).",
+        "Symbol auf der falschen Seite platzieren.",
+        "Informationsverlust bei (0,3) übersehen.",
+        "FK-Konsequenz nach der Umwandlung vergessen."
+      ],
+      "cheatsheet": "Chen → Krähenfuß:\nmin=0→o | min=1→| | max=1→| | max=n→<\nReihenfolge: [Minimum][Maximum am Entitytyp]\n\n(1,1)↔|| | (0,1)↔o| | (1,n)↔||< | (0,n)↔o<\n\nKontrollfragen nach Umwandlung:\n1. Welche Seite hat max=1? → FK dorthin\n2. min der FK-Seite? → NOT NULL oder nullable\n3. Ist es 1:1? → UNIQUE nötig"
+    },
+    {
+      "id": "beziehungstypen",
+      "title": "Beziehungstypen 1:1, 1:n, m:n",
+      "icon": "🔗",
+      "category": "erd",
+      "pruefungsrelevanz": "Fundament aller Implementierungsaufgaben. Wer den Typ falsch bestimmt, platziert FK falsch, setzt UNIQUE falsch oder erstellt unnötige Zwischentabellen.",
+      "levels": {
+        "1": [
+          "Der Beziehungstyp ergibt sich AUSSCHLIESSLICH aus den max-Werten. Die min-Werte spielen dafür keine Rolle.",
+          "beide max=1 → 1:1 (beide höchstens einmal gebunden). ein max=1, einer=n → 1:n (einer hat viele, jeder der vielen höchstens einen). beide max=n → m:n (beide können viele Partner haben).",
+          "Umsetzung: Bei 1:1 und 1:n kommt ein FK in eine bestehende Tabelle. Bei m:n entsteht eine neue Zwischentabelle."
+        ],
+        "2": [
+          "Bei 1:n kommt der FK in die Tabelle auf der Seite mit max=1. Intuitiv: Wenn ein Angestellter genau einer Abteilung gehört, speichert man die Abteilungsnummer beim Angestellten. Der min-Wert dieser Seite bestimmt NOT NULL (min=1) oder nullable (min=0).",
+          "Bei 1:1 gibt es theoretisch zwei FK-Positionen (beide max=1). In der Praxis wählt man die vollständig teilnehmende Seite (min=1). Der FK braucht immer ein UNIQUE-Constraint, sonst wird es technisch eine 1:n-Beziehung.",
+          "Bei m:n kann keine der Tabellen einen einzelnen FK aufnehmen — beide Seiten haben mehrere Partner. Es entsteht eine Zwischentabelle, deren PK aus den FKs beider Seiten zusammengesetzt ist."
+        ],
+        "3": [
+          "Für eine 1 musst du Fehler in einer vorgegebenen Umsetzung erkennen. Typische 1er-Frage: Eine Tabelle hat einen FK ohne UNIQUE — ist das 1:1 oder 1:n? Immer 1:n, weil ohne UNIQUE mehrere Datensätze denselben FK-Wert haben können.",
+          "Das UNIQUE-Constraint ist das technische Mittel, das eine 1:n-Umsetzung in eine 1:1-Umsetzung verwandelt. Fehlt es, ist es kein 1:1, auch wenn das ERD es vorschreibt.",
+          "Rekursive Beziehung: Ein Entitytyp hat eine Beziehung mit sich selbst. Beispiel untersteht: m:n eines Entitytyps mit sich selbst → Zwischentabelle, beide FKs zeigen auf dieselbe Tabelle."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "1:1 (Testanalyse Aufgabe 7)",
+          "text": "Mitarbeiter leitet höchstens ein Restaurant, jedes Restaurant hat genau einen Leiter.",
+          "code": "[Mitarbeiter] (0,1)---<leitet>---(1,1) [Restaurant]\n\nbeide max=1 → 1:1\nFK in Restaurant (vollständige Seite, min=1)\nNOT NULL + UNIQUE\nUNIQUE verhindert, dass zwei Restaurants denselben Leiter haben"
+        }
+      ],
+      "fehler": [
+        "Beziehungstyp nach min-Werten bestimmen — nur max zählt.",
+        "UNIQUE bei 1:1 vergessen → technisch 1:n.",
+        "UNIQUE bei 1:n setzen → technisch 1:1.",
+        "FK bei 1:n auf die max=n-Seite legen statt auf max=1."
+      ],
+      "cheatsheet": "max=1, max=1 → 1:1 → FK + UNIQUE\nmax=1, max=n → 1:n → FK auf max=1-Seite, kein UNIQUE\nmax=n, max=n → m:n → Zwischentabelle, PK aus beiden FKs\n\nNULL: min der FK-Seite\nmin=0 → nullable | min=1 → NOT NULL\n\nKontrollfrage: 'Welche Tabelle hält den Zeiger auf genau einen?' → FK dorthin"
+    },
+    {
+      "id": "erd-tabellen",
+      "title": "ERD in Tabellen umsetzen",
+      "icon": "🗂️",
+      "category": "erd",
+      "pruefungsrelevanz": "Kernthema der Prüfung. Aufgaben 1–7 der Testanalyse betreffen alle die Umsetzung — von FK-Platzierung über NULL/NOT NULL bis zur CREATE-TABLE-Reihenfolge.",
+      "levels": {
+        "1": [
+          "Jeder Entitytyp wird zu einer Tabelle, sein PK zum PRIMARY KEY, jedes Attribut zur Spalte.",
+          "Die drei Beziehungsregeln: 1:1 → FK + UNIQUE. 1:n → FK in die Tabelle mit max=1, ohne UNIQUE. m:n → eigene Zwischentabelle mit zusammengesetztem PK aus beiden FKs.",
+          "Ob der FK NOT NULL ist, hängt vom min-Wert der Seite ab, die den FK enthält: min=1 → NOT NULL, min=0 → nullable."
+        ],
+        "2": [
+          "Die Reihenfolge der CREATE TABLE ist nicht beliebig: Eine Tabelle mit FK kann erst erstellt werden, wenn die referenzierte Tabelle existiert. Reihenfolge: starke Entitytypen zuerst, dann abhängige, dann Zwischentabellen.",
+          "Bei 1:1 reicht der FK nicht — ohne UNIQUE ist es technisch 1:n. Das war der häufigste Fehler im ersten Test.",
+          "Bei abhängigen Entitytypen ist der FK Teil des PKs. Der zusammengesetzte PK besteht aus dem FK der starken Seite plus einem Teilschlüssel des abhängigen Entitytyps."
+        ],
+        "3": [
+          "Mehrstufige Abhängigkeit (Testanalyse Aufgabe 5): Kino → Saal → Vorstellung. Saal ist abhängig von Kino (PK = KinoNr + SaalNr), Vorstellung ist abhängig von Saal (PK = KinoNr + SaalNr + Beginnzeitpunkt).",
+          "Der zusammengesetzte FK von Vorstellung verweist auf den zusammengesetzten PK von Saal. Das erfordert einen expliziten FOREIGN KEY-Block: foreign key (KinoNr, SaalNr) references Saal(KinoNr, SaalNr). Ein einfaches 'references Saal' genügt nicht.",
+          "Mehrwertiger (ternärer) Beziehungstyp: Bei drei Entitytypen entsteht immer eine Tabelle mit PK aus allen drei FKs."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Abhängige Entitytypen mit zusammengesetztem FK",
+          "text": "Kino → Saal → Vorstellung. Zweistufige Abhängigkeit (Testanalyse Aufgabe 5).",
+          "code": "Reihenfolge: erst Kino, dann Saal, dann Vorstellung\n\nSaal: PK (KinoNr, SaalNr), KinoNr ist FK auf Kino\nVorstellung: PK (KinoNr, SaalNr, Beginnzeitpunkt)\n              FOREIGN KEY (KinoNr, SaalNr) REFERENCES Saal\n\n(siehe SQL-Bereich für vollständige DDL)"
+        }
+      ],
+      "fehler": [
+        "UNIQUE bei 1:1 vergessen.",
+        "Falsche CREATE-TABLE-Reihenfolge (FK vor referenzierter Tabelle).",
+        "Zusammengesetzten FK bei mehrteiligem PK vergessen.",
+        "NULL/NOT NULL aus dem min-Wert der falschen Seite ableiten."
+      ],
+      "cheatsheet": "1. Starke Entitytypen (keine FKs)\n2. Abhängige Entitytypen (FK im PK)\n3. Tabellen mit einfachen FKs\n4. Zwischentabellen (m:n)\n\n1:1 → FK + UNIQUE\n1:n → FK auf max=1-Seite\nm:n → Zwischentabelle, PK = FK_A + FK_B\nAbh. Entitytyp → FK ist Teil des PK\n\nNULL: min der FK-Seite!"
+    },
+    {
+      "id": "11-beziehungen",
+      "title": "1:1-Beziehungen implementieren",
+      "icon": "🔑",
+      "category": "implementierung",
+      "pruefungsrelevanz": "Häufigste Fehlerquelle der Testanalyse. Aufgaben 1, 2, 6, 7 drehten sich alle um FK-Platzierung, NOT NULL und UNIQUE bei 1:1.",
+      "levels": {
+        "1": [
+          "Eine 1:1-Beziehung erkennt man daran, dass beide max-Werte gleich 1 sind: (0,1)↔(0,1), (0,1)↔(1,1) oder (1,1)↔(1,1).",
+          "Jede 1:1-Beziehung braucht einen FK mit UNIQUE-Constraint. Immer. Ohne Ausnahme. Ohne UNIQUE ist es keine technisch korrekte 1:1-Beziehung.",
+          "Merksatz: 1:1-Beziehung = FK + UNIQUE. Ob der FK auch NOT NULL ist, hängt vom min-Wert der FK-Seite ab."
+        ],
+        "2": [
+          "Bei (0,1)↔(1,1) sollte der FK auf die Seite mit (1,1) gelegt werden, weil ein Datensatz dieser Tabelle ohne Partner nicht erlaubt ist — der FK ist dort NOT NULL.",
+          "Bei (0,1)↔(0,1) kann der FK auf beiden Seiten liegen und ist nullable. Man wählt die semantisch sinnvollere Seite.",
+          "Bei (1,1)↔(1,1) ist der FK auf beiden Seiten NOT NULL. Man wählt die semantisch abhängigere Seite. Der Grund für die Bevorzugung der vollständig teilnehmenden Seite: Der FK ist dort sowieso NOT NULL und die Semantik ist klarer."
+        ],
+        "3": [
+          "Für eine 1 musst du Fehler in einer vorgegebenen DDL erkennen. Kritische Punkte: Ist UNIQUE vorhanden? Stimmt NOT NULL mit dem min-Wert? Liegt der FK auf der richtigen Seite?",
+          "SQL-Server-Spezialfall (happysushi4): Wenn der FK nullable ist (min=0), kann ein normales UNIQUE problematisch sein, weil manche DBMS NULL=NULL nicht als Duplikat behandeln. SQL Server löst das mit CREATE UNIQUE NONCLUSTERED INDEX WHERE column IS NOT NULL. Für die meisten Prüfungsaufgaben genügt das einfache UNIQUE.",
+          "Dieser Spezialfall ist NICHT prüfungskritisch für den 28.05., aber relevant, falls nach dem Unterschied SQLite vs. SQL Server beim NULL-Verhalten gefragt wird."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Mitarbeiter leitet Restaurant (Testanalyse Aufgabe 7)",
+          "text": "Mitarbeiter optional (0,1), Restaurant vollständig (1,1). FK in Restaurant.",
+          "code": "[Mitarbeiter] (0,1)---<leitet>---(1,1) [Restaurant]\n\nbeide max=1 → 1:1\nFK in Restaurant (vollständige Seite)\nNOT NULL (min=1 bei Restaurant)\nUNIQUE (1:1-Bedingung)\n\n→ Restaurant(RestaurantNr PK, MitarbeiterNr FK NOT NULL UNIQUE)"
+        }
+      ],
+      "fehler": [
+        "UNIQUE vergessen → technisch 1:n (häufigster Fehler, Aufgaben 1, 7, 10).",
+        "NOT NULL bei (0,1) setzen → widerspricht teilweiser Teilnahme.",
+        "FK auf die optionale statt vollständige Seite legen.",
+        "Annahme, UNIQUE sei nur bei vollständiger Teilnahme nötig — UNIQUE ist IMMER nötig bei 1:1."
+      ],
+      "cheatsheet": "1:1 erkennen: beide max-Werte = 1\n\n1:1 implementieren:\nFK + UNIQUE → immer, keine Ausnahme\nNOT NULL → wenn min der FK-Seite = 1\nnullable → wenn min der FK-Seite = 0\n\nFK-Seite wählen: bevorzugt min=1 (vollständig)\n\nRestaurant(Nr PK, MitarbeiterNr FK NOT NULL UNIQUE)"
+    },
+    {
+      "id": "1n-beziehungen",
+      "title": "1:n-Beziehungen implementieren",
+      "icon": "📂",
+      "category": "implementierung",
+      "pruefungsrelevanz": "Aufgabe 6 der Testanalyse: A(1,n)---(0,1)B. FK-Seite und NULL-Entscheidung waren die häufigsten Fehler.",
+      "levels": {
+        "1": [
+          "Eine 1:n-Beziehung liegt vor, wenn ein max-Wert = 1 und der andere = n ist. Der FK kommt in die Tabelle auf der Seite mit max=1 (die '1-Seite').",
+          "Es wird KEIN UNIQUE-Constraint gesetzt, weil mehrere Datensätze dieselbe referenzierte Zeile haben dürfen.",
+          "Bildlich: Eine Abteilung hat viele Angestellte. Man kann keine Liste in einer Spalte speichern, also speichert man bei jedem Angestellten die Abteilungsnummer. FK kommt in Angestellter (n-Seite ist Angestellter, aber FK zeigt auf die 1-Seite Abteilung)."
+        ],
+        "2": [
+          "Die NULL-Entscheidung hängt AUSSCHLIESSLICH vom min-Wert der Seite ab, die den FK enthält — nicht vom min-Wert der anderen Seite.",
+          "Kritisches Beispiel: [A]---(1,n)---<ab>---(0,1)---[B]. max_A=n, max_B=1 → B ist die Seite mit max=1 → FK kommt in B. min_B=0 → FK ist nullable. A hat zwar min=1, aber das ist irrelevant, weil A den FK nicht enthält.",
+          "Die häufigsten Fehler bei Aufgabe 6: FK in A statt B (A ist die n-Seite), und NOT NULL setzen wegen min_A=1 (aber das ist der min der falschen Seite)."
+        ],
+        "3": [
+          "Für eine 1 musst du Ketten von 1:n-Beziehungen umsetzen und Fehler diagnostizieren. Im Kino-ERD: Kino-Saal (FK in Saal) und Saal-Vorstellung (FK in Vorstellung). Saal ist zusätzlich abhängig → FK ist Teil des PKs.",
+          "Du musst erkennen, wann UNIQUE bei 1:n fälschlicherweise eingebaut wurde. Ein FK mit UNIQUE-Constraint bei einer 1:n-Beziehung schränkt sie auf 1:1 ein — das ist ein Implementierungsfehler."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Testbeispiel A(1,n)---(0,1)B (Aufgabe 6)",
+          "text": "Das wichtigste Beispiel. FK in B, nullable, kein UNIQUE.",
+          "code": "[A] (1,n)---<ab>---(0,1) [B]\n\nmax_A=n, max_B=1 → 1:n\nFK kommt in B (Seite mit max=1)\nmin_B=0 → FK ist nullable\nkein UNIQUE\n\n→ B(B_ID PK, A_ID FK nullable)\n\nHäufige Fehler: FK in A | NOT NULL wegen min_A=1 | UNIQUE"
+        }
+      ],
+      "fehler": [
+        "FK auf die max=n-Seite statt max=1-Seite legen.",
+        "NOT NULL aus dem min-Wert der falschen Seite ableiten.",
+        "UNIQUE hinzufügen → schränkt auf 1:1 ein.",
+        "1:n mit m:n verwechseln und unnötige Zwischentabelle erstellen."
+      ],
+      "cheatsheet": "FK in die Tabelle mit max=1 → immer\nUNIQUE → NIEMALS bei 1:n\nNOT NULL → wenn min der FK-Seite = 1\nnullable → wenn min der FK-Seite = 0\n\nA(1,n)---(0,1)B → FK in B, nullable, kein UNIQUE\n\nNULL-Falle: min der FK-SEITE lesen,\nnicht der anderen Seite!"
+    },
+    {
+      "id": "mn-beziehungen",
+      "title": "m:n-Beziehungen implementieren",
+      "icon": "🔀",
+      "category": "implementierung",
+      "pruefungsrelevanz": "Schulungsfirma (geeignet) und Lieferant/Teil (lt). Zwischentabelle, zusammengesetzter PK und Beziehungsattribute.",
+      "levels": {
+        "1": [
+          "Eine m:n-Beziehung (beide max=n) braucht immer eine eigene Zwischentabelle. Die Tabelle enthält zwei Fremdschlüssel, einen auf jede Seite, und der PK ist die Kombination beider FKs.",
+          "Beziehungsattribute (z.B. menge) gehören als zusätzliche Spalten in die Zwischentabelle — sie sind KEIN Teil des PK.",
+          "Gedankenmodell: Man kann nicht beim Lieferanten eine Liste der Teile speichern. Also erstellt man eine Tabelle, in der jede Zeile eine Kombination (Lieferant, Teil) beschreibt. Die Kombination muss eindeutig sein."
+        ],
+        "2": [
+          "Die Erstellungsreihenfolge ist wichtig: Beide referenzierten Tabellen müssen zuerst existieren. Erst A, dann B, dann die Zwischentabelle.",
+          "Beziehungsattribute gehören zur Beziehung, nicht zu den Entitytypen. menge ist eine Eigenschaft der konkreten Lieferung, nicht des Lieferanten oder des Teils allein. Im logischen Modell: lt(lnr > l, tnr > t, menge).",
+          "Die beiden FKs in der Zwischentabelle sind fast immer NOT NULL, weil eine Verbindungszeile ohne einen der beiden Partner sinnlos ist. Das ergibt sich aus der Logik des m:n-Typs, nicht aus dem min-Wert des ERDs."
+        ],
+        "3": [
+          "Ternärer Beziehungstyp: Drei Entitytypen, drei FKs, PK aus allen drei. Beispiel unterrichtet(KNr > Klasse, SVN > Lehrer, FachKzl > Fach, Stunden). Stunden ist ein Beziehungsattribut.",
+          "Rekursive m:n-Beziehung: Beide FKs zeigen auf dieselbe Tabelle, aber in verschiedenen Rollen. Beispiel untersteht(SVN > Angestellter, LeiterSVN > Angestellter). PK ist die Kombination beider.",
+          "Warum gehört menge nicht in den PK? Weil (lnr, tnr) bereits eindeutig identifiziert, welche Lieferbeziehung gemeint ist. menge beschreibt diese Beziehung, ist aber kein Teil ihrer Identität."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Lieferant liefert Teil (lt-Tabelle)",
+          "text": "Beziehungsattribut menge, zusammengesetzter PK (lnr, tnr).",
+          "code": "[Lieferant] (0,n)---<liefert>---(0,n) [Teil]\nLogisch: lt(lnr > l, tnr > t, menge)\n\nbeide max=n → m:n → Zwischentabelle\nPK = (lnr, tnr)\nmenge = Beziehungsattribut, KEIN PK-Teil\n\n(vollständige DDL im SQL-Bereich)"
+        },
+        {
+          "titel": "Rekursive m:n (untersteht)",
+          "text": "Beide FKs zeigen auf Angestellter, verschiedene Rollen.",
+          "code": "[Angestellter] (0,n)---<untersteht>---(0,n) [Angestellter]\n\nuntersteht(SVN > Angestellter, LeiterSVN > Angestellter)\nPK = (SVN, LeiterSVN)\nSVN = der Untergebene, LeiterSVN = der Vorgesetzte"
+        }
+      ],
+      "fehler": [
+        "Einfachen FK statt Zwischentabelle verwenden — funktioniert bei m:n nicht.",
+        "Unvollständiger PK (nur ein FK statt beide).",
+        "UNIQUE auf einen FK setzen → schränkt auf 1:n ein.",
+        "Beziehungsattribut fälschlich in einen Entitytyp eintragen."
+      ],
+      "cheatsheet": "Zwischentabelle:\n  FK_A not null references A\n  FK_B not null references B\n  primary key (FK_A, FK_B)\n\nBeziehungsattribut: extra Spalte, KEIN PK-Teil\n\nReihenfolge: erst A, dann B, dann Zwischentabelle\n\nlt(lnr>l, tnr>t, menge)\ngeeignet(knr>kurs, pnr>referent)\nuntersteht(SVN>Angest., LeiterSVN>Angest.) -- rekursiv"
+    },
+    {
+      "id": "abhaengige-entitytypen",
+      "title": "Abhängige Entitytypen",
+      "icon": "🏗️",
+      "category": "implementierung",
+      "pruefungsrelevanz": "Aufgaben 4 und 5 der Testanalyse: Kino/Saal/Vorstellung. Die Falle (1,1) ≠ abhängiger Entitytyp war Antwort G in Aufgabe 4.",
+      "levels": {
+        "1": [
+          "Ein abhängiger (schwacher) Entitytyp kann nicht eigenständig identifiziert werden. Sein Teilschlüssel ist nur innerhalb des starken Entitytyps eindeutig.",
+          "Das zentrale Erkennungsmerkmal: Der FK auf den starken Entitytyp ist Teil des PKs. Wenn der FK im PK steht, ist es ein abhängiger Entitytyp.",
+          "Beispiel: SaalNr 3 gibt es in vielen Kinos. Erst (KinoNr, SaalNr) identifiziert einen Saal eindeutig. KinoNr ist FK + Teil des PKs. In der DDL steht der FK zuerst."
+        ],
+        "2": [
+          "Die Erstellungsreihenfolge ist zwingend: Der starke Entitytyp muss zuerst erstellt werden, weil der abhängige Entitytyp einen FK darauf enthält.",
+          "BUGU hat im Unterricht explizit kommentiert: 'Bei einem abhängigen Entitytyp ist es wichtig, dass der Fremdschlüssel zu Beginn steht und Teil des primary keys ist.'",
+          "Der abhängige Entitytyp nimmt vollständig an der identifizierenden Beziehung teil (min=1). Die Beziehung zum starken Entitytyp heißt 'identifizierende Beziehung'."
+        ],
+        "3": [
+          "Falle: Nur weil ein Entitytyp mit (1,1) teilnimmt, ist er noch kein abhängiger Entitytyp. (1,1) beschreibt nur die Teilnahmevorschrift, nicht die Identitätsabhängigkeit. Das richtige Merkmal ist: FK im PK.",
+          "Mehrstufige Abhängigkeit: Vorstellung ist abhängig von Saal, Saal ist abhängig von Kino. Der PK propagiert nach unten: Vorstellung erbt KinoNr + SaalNr als zusammengesetzten FK plus eigenen Teilschlüssel (Beginnzeitpunkt).",
+          "Der zusammengesetzte FK braucht einen expliziten FOREIGN KEY-Block: foreign key (KinoNr, SaalNr) references Saal(KinoNr, SaalNr), weil der PK von Saal aus zwei Spalten besteht."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Kino → Saal → Vorstellung (Testanalyse Aufgabe 5)",
+          "text": "Zweistufige Abhängigkeit, zusammengesetzte FKs.",
+          "code": "Kino(KinoNr PK)\n  → Saal(KinoNr PK/FK, SaalNr PK)\n    → Vorstellung(KinoNr, SaalNr, Beginnzeitpunkt — alle PK)\n\nVorstellung braucht expliziten FK-Block:\nFOREIGN KEY (KinoNr, SaalNr) REFERENCES Saal(KinoNr, SaalNr)\n\nReihenfolge: Kino → Saal → Vorstellung (zwingend)"
+        }
+      ],
+      "fehler": [
+        "FK nicht als Teil des PKs kennzeichnen → normale 1:n statt identifizierende Beziehung.",
+        "Falsche CREATE-Reihenfolge (abhängiger vor starkem Entitytyp).",
+        "(1,1)-Teilnahme mit abhängigem Entitytyp verwechseln (Antwort G, Aufgabe 4).",
+        "Zusammengesetzten FK-Block bei mehrteiligem PK vergessen."
+      ],
+      "cheatsheet": "FK im PK → abhängiger Entitytyp\n(1,1) allein → NICHT ausreichend!\n\nMerkmale (alle vier):\n1. Kein vollständiger eigener Schlüssel\n2. FK ist Teil des PKs\n3. Vollständige Teilnahme (min=1)\n4. Identifizierende Beziehung\n\nReihenfolge: starker Entitytyp zuerst\nMehrstufig: FOREIGN KEY (A, B) REFERENCES T(A, B)"
+    },
+    {
+      "id": "mehrwertige-beziehungen",
+      "title": "Mehrwertige Beziehungstypen",
+      "icon": "🔧",
+      "category": "implementierung",
+      "pruefungsrelevanz": "unterrichtet(Klasse, Lehrer, Fach, Stunden). PK aus allen drei FKs. Unterschied zu drei binären Beziehungen ist 1er-Wissen.",
+      "levels": {
+        "1": [
+          "Ein mehrwertiger (ternärer) Beziehungstyp hat drei oder mehr beteiligte Entitytypen. Es entsteht immer eine eigene Tabelle, unabhängig von den Kardinalitäten. Das Maximum ist immer n.",
+          "Die Tabelle enthält einen FK auf jeden beteiligten Entitytyp, und der PK ist die Kombination aller dieser FKs. Beziehungsattribute kommen als zusätzliche Spalten.",
+          "Prüffrage zum Erkennen: 'Würde das Weglassen eines Entitytyps die Aussage unvollständig machen?' Wenn ja, gehören alle zur selben Beziehung."
+        ],
+        "2": [
+          "Der wichtigste Unterschied zu einer gewöhnlichen m:n-Tabelle ist, dass der PK aus drei (oder mehr) FKs besteht: primary key (KNr, SVN, FachKzl), nicht primary key (KNr, SVN).",
+          "Beziehungsattribute wie Stunden gehören in die Beziehungstabelle, nicht in einen der Entitytypen. Die Stundenanzahl hängt von der konkreten Kombination (Klasse, Lehrer, Fach) ab.",
+          "Erstellungsreihenfolge: erst alle Entitytypen, dann die Beziehungstabelle."
+        ],
+        "3": [
+          "Für eine 1 musst du erklären können, warum ein ternärer Beziehungstyp NICHT durch drei binäre Beziehungen ersetzbar ist.",
+          "Drei binäre Beziehungen ('Lehrer unterrichtet Klasse', 'Lehrer lehrt Fach', 'Klasse hat Fach') können nicht aussagen, dass Lehrer A die Klasse X IN Fach M unterrichtet. Die Dreier-Kombination geht verloren.",
+          "Der ternäre Beziehungstyp speichert diese Information direkt als eine Zeile pro Kombination — das ist genau das, was die binäre Modellierung nicht leisten kann."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "unterrichtet (Klasse × Lehrer × Fach)",
+          "text": "Ternärer Beziehungstyp mit Beziehungsattribut Stunden.",
+          "code": "unterrichtet(KNr > Klasse, SVN > Lehrer, FachKzl > Fach, Stunden)\n\nPK = (KNr, SVN, FachKzl) — alle drei FKs\nStunden = Beziehungsattribut, KEIN PK-Teil\n\nWarum kein PK-Teil? Die Kombination (Klasse, Lehrer, Fach)\nidentifiziert die Verbindung bereits eindeutig."
+        }
+      ],
+      "fehler": [
+        "Unvollständiger PK (nur zwei statt alle drei FKs).",
+        "Aufteilen in binäre Beziehungen → Dreier-Kombination geht verloren.",
+        "Beziehungsattribut in einen Entitytyp statt in die Beziehungstabelle.",
+        "Falsche Erstellungsreihenfolge."
+      ],
+      "cheatsheet": "3+ Entitytypen → eigene Tabelle\nPK = ALLE FKs zusammen (nicht nur zwei!)\nMaximum ist immer n\n\nunterrichtet(KNr, SVN, FachKzl, Stunden)\nPK: (KNr, SVN, FachKzl)\nStunden: Beziehungsattribut\n\nTernär ≠ drei binäre Beziehungen!"
+    },
+    {
+      "id": "erd-rekonstruieren",
+      "title": "ERD aus logischem Modell rekonstruieren",
+      "icon": "🔁",
+      "category": "erd",
+      "pruefungsrelevanz": "Rückwärts-Lesen von Tabellen ins ERD. Die Grenzen der Rekonstruktion explizit kennen ist 1er-Wissen.",
+      "levels": {
+        "1": [
+          "Jede Tabelle ohne FK auf andere Tabellen ist ein starker Entitytyp. Jeder FK entspricht einer Beziehung zu der referenzierten Tabelle.",
+          "FK ohne UNIQUE → 1:n (die Tabelle mit dem FK ist die Seite mit max=1 aus Sicht der Referenz). FK mit UNIQUE → 1:1.",
+          "PK ausschließlich aus FKs → m:n-Zwischentabelle. PK = FK + eigener Teilschlüssel → abhängiger Entitytyp."
+        ],
+        "2": [
+          "Optionalität ableiten: NOT NULL beim FK → min=1 auf der FK-Seite (vollständige Teilnahme). Nullable FK → min=0 (teilweise Teilnahme).",
+          "Wichtige Grenze: Der min-Wert der Nicht-FK-Seite ist aus dem logischen Modell NICHT eindeutig ableitbar. Ob eine Abteilung mindestens einen Angestellten haben muss, steht nicht in der Tabelle.",
+          "Abhängige Entitytypen erkennt man am PK/FK: Wenn ein FK gleichzeitig Teil des PKs ist, ist es ein abhängiger Entitytyp."
+        ],
+        "3": [
+          "Für eine 1 musst du die Grenzen der Rekonstruktion erklären. Drei Informationen gehen verloren: 1) Der Beziehungsname (ob 'gehört zu' oder 'arbeitet in'). 2) Der min-Wert der Nicht-FK-Seite. 3) Bei 1:1 hätte der FK auf beide Seiten gelegt werden können — es gibt mehrere gültige ERDs.",
+          "Wer in der Prüfung ein ERD rekonstruiert und dabei min-Werte der Nicht-FK-Seite setzt, sollte wissen, dass das eine begründete Annahme ist, keine sichere Ableitung. Ein Fragezeichen bei unbekanntem min ist korrekt und erwartet."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "1:1 mit nicht-ableitbarem min",
+          "text": "Aus der Tabellenstruktur rekonstruiertes ERD.",
+          "code": "Angestellter(SVN PK)\nFiliale(FilialNr PK, LeiterSVN FK→Angestellter NOT NULL UNIQUE)\n\nUNIQUE → 1:1\nNOT NULL → Filiale vollständig (min=1)\nAngestellter-min: NICHT ableitbar!\n\n[Angestellter] (?,1)---<leitet>---(1,1) [Filiale]\n(? wahrscheinlich 0, aber nicht beweisbar)"
+        }
+      ],
+      "fehler": [
+        "Den min-Wert der Nicht-FK-Seite aus der Tabelle ablesen, obwohl er nicht ableitbar ist.",
+        "m:n-Tabelle und abhängigen Entitytyp verwechseln (PK nur aus FKs vs. FK + Teilschlüssel).",
+        "UNIQUE bei 1:1-Rekonstruktion übersehen.",
+        "FK-Richtung im ERD falsch interpretieren."
+      ],
+      "cheatsheet": "FK ohne UNIQUE → 1:n (FK-Tabelle = max=1-Seite)\nFK mit UNIQUE → 1:1\nPK = FK_A + FK_B → m:n-Zwischentabelle\nPK = FK + Teilschlüssel → abhängiger Entitytyp\n\nNOT NULL → min=1 auf FK-Seite\nnullable → min=0 auf FK-Seite\n\nGRENZEN:\nBeziehungsname → verloren\nmin der Nicht-FK-Seite → NICHT ableitbar"
+    },
+    {
+      "id": "unterabfragen",
+      "title": "Unterabfragen",
+      "icon": "🔎",
+      "category": "sql",
+      "pruefungsrelevanz": "Aufgaben 9, 11, 12 der Testanalyse. Mehrfachwert-Fehler, IN/EXISTS/ALL/SOME, T1-und-T2-Denkfehler.",
+      "levels": {
+        "1": [
+          "Eine Unterabfrage ist ein SELECT innerhalb eines anderen SQL-Statements. Sie steht immer in runden Klammern.",
+          "Bei Vergleichsoperatoren (=, >, <) muss die Unterabfrage genau EINEN Wert zurückgeben. Gibt sie mehrere zurück, entsteht ein Laufzeitfehler.",
+          "Lösung für mehrere Werte: MAX() oder MIN() für einen Einzelwert, oder ALL/SOME/IN für Mengenvergleiche."
+        ],
+        "2": [
+          "IN prüft, ob ein Wert in der Ergebnismenge enthalten ist. EXISTS prüft, ob die Unterabfrage mindestens eine Zeile zurückgibt — der Inhalt ist egal. ALL/SOME erlauben Vergleiche mit einer Menge.",
+          "> ALL bedeutet 'größer als alle' (= > MAX). > SOME bedeutet 'größer als mindestens einen' (= > MIN). SOME und ANY sind Synonyme.",
+          "Unterabfragen treten an drei Stellen auf: WHERE (am häufigsten), SELECT (berechnete Spalte, immer korreliert) und FROM (Inline-View, braucht Alias)."
+        ],
+        "3": [
+          "Korrelierte Unterabfrage: Die innere Abfrage verwendet einen Wert aus der äußeren und wird für jede Zeile neu ausgeführt. Erkennungsmerkmal: ein Spaltenname mit Tabellenalias der äußeren Abfrage (z.B. l.lnr).",
+          "Nicht korrelierte Unterabfrage: unabhängig, einmalig berechnet. Erkennungstest: Kann die innere Abfrage alleine ausgeführt werden?",
+          "Der T1-und-T2-Denkfehler: 'WHERE tnr = T1 AND tnr = T2' ist immer leer, weil eine Zeile nicht gleichzeitig zwei Werte haben kann. Lösung: zwei separate Unterabfragen mit AND."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Mehrfachwert-Fehler (Aufgabe 9)",
+          "text": "Mehrere rote Teile → einfacher Vergleich schlägt fehl.",
+          "code": "-- FALSCH (mehrere rote Preise):\nselect * from t\nwhere preis > (select preis from t where farbe = 'rot');\n\n-- KORREKT mit MAX:\nselect * from t\nwhere preis > (select max(preis) from t where farbe = 'rot');"
+        }
+      ],
+      "fehler": [
+        "Klammern vergessen.",
+        "Mehrfachwert-Fehler bei =, >, < — Lösung: MAX/MIN oder ALL/SOME.",
+        "T1-und-T2-Denkfehler (AND auf derselben Spalte).",
+        "ALL und SOME verwechseln."
+      ],
+      "cheatsheet": "Unterabfrage immer in runden Klammern!\n\nBei =, >, <: genau 1 Wert nötig\n→ Lösung: max(), min() oder ALL/SOME\n\nIN: Wert in Menge\nEXISTS: mind. 1 Zeile (Inhalt egal)\n> ALL ~ > MAX | > SOME ~ > MIN\n\nT1 und T2: zwei Unterabfragen mit AND\nNICHT: where tnr='T1' and tnr='T2' → leer!"
+    },
+    {
+      "id": "korrelierte-unterabfragen",
+      "title": "Korrelierte Unterabfragen",
+      "icon": "🪢",
+      "category": "sql",
+      "pruefungsrelevanz": "Aufgabe 11 der Testanalyse: Erkennung korrelierter Unterabfragen. l.lnr in der inneren Abfrage ist der Beweis.",
+      "levels": {
+        "1": [
+          "Eine Unterabfrage ist korreliert, wenn die innere Abfrage einen Wert aus der äußeren Abfrage verwendet. Sie wird für jede Zeile der äußeren Abfrage neu ausgeführt.",
+          "Erkennungsmerkmal: Die innere Abfrage enthält eine Spalte mit einem Tabellennamen oder Alias der äußeren Abfrage, z.B. l.lnr.",
+          "Erkennungstest: Kann die innere Abfrage alleine ausgeführt werden? Ja → nicht korreliert. Nein (weil sie auf eine äußere Spalte verweist) → korreliert."
+        ],
+        "2": [
+          "Ausführungsreihenfolge: Bei einer korrelierten Unterabfrage nimmt das DBMS jede Zeile der äußeren Tabelle, setzt deren Wert in die innere Abfrage ein, führt sie aus und entscheidet dann über die Aufnahme. Das passiert für jede Zeile neu.",
+          "EXISTS und NOT EXISTS sind die typischsten Operatoren. EXISTS liefert true, sobald die innere Abfrage mindestens eine Zeile findet. Der Inhalt von SELECT * ist irrelevant.",
+          "IN-Unterabfragen sind meist nicht korreliert (einmalig berechnet). EXISTS-Unterabfragen sind fast immer korreliert."
+        ],
+        "3": [
+          "Korrelierte Unterabfrage in SELECT: liefert für jede Zeile einen berechneten Wert, ist immer korreliert und muss genau einen Wert liefern. Beispiel: Anzahl Untergebene pro Angestellter mit (select count(*) from untersteht where LeiterSVN = a.SVN).",
+          "Dieselbe Frage lässt sich oft mit JOIN + GROUP BY lösen, was bei großen Tabellen effizienter ist. Beide Lösungen sind korrekt — die korrelierte Variante ist flexibler.",
+          "Du musst den Ausführungsablauf konkret beschreiben können: für L5 wird l.lnr='L5' eingesetzt, die innere Abfrage prüft die Existenz, L5 kommt ins Ergebnis oder nicht."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Korreliert vs. nicht korreliert",
+          "text": "Der Unterschied an zwei Beispielen.",
+          "code": "-- KORRELIERT (l.lnr von außen):\nselect lnr, lname from l\nwhere exists (\n  select * from lt where lt.lnr = l.lnr\n);\n\n-- NICHT KORRELIERT (innere Abfrage unabhängig):\nselect lnr, lname from l\nwhere lnr in (select lnr from lt);"
+        }
+      ],
+      "fehler": [
+        "Annehmen, EXISTS sei automatisch korreliert — entscheidend ist der Verweis auf die äußere Abfrage.",
+        "Korrelationsverweis (lt.lnr = l.lnr) vergessen — dann wird ALLES zurückgegeben.",
+        "NOT EXISTS als 'kein NULL-Wert' missverstehen — es bedeutet 'keine Zeile'."
+      ],
+      "cheatsheet": "Korreliert: innere Abfrage läuft NICHT alleine\nNicht korreliert: unabhängig, einmalig\n\nErkennungstest: 'Kann die innere Abfrage\nalleine ausgeführt werden?'\n\nwhere lt.lnr = l.lnr → l von außen → korreliert\nwhere lt.lnr = lt.lnr → alles von lt → nicht korreliert\n\nEXISTS → fast immer korreliert\nIN → meist nicht korreliert"
+    },
+    {
+      "id": "in-exists",
+      "title": "IN, EXISTS und NOT EXISTS",
+      "icon": "🎯",
+      "category": "sql",
+      "pruefungsrelevanz": "Aufgaben 11 und 12 der Testanalyse. Der T1-und-T2-Denkfehler war der häufigste Fehler bei Aufgabe 12.",
+      "levels": {
+        "1": [
+          "IN prüft, ob ein Wert in einer Ergebnismenge enthalten ist — die Unterabfrage darf mehrere Zeilen liefern. EXISTS prüft, ob die Unterabfrage überhaupt etwas findet — der Inhalt ist egal. NOT EXISTS prüft, ob sie keine Zeile findet.",
+          "Der wesentliche Unterschied: IN vergleicht Werte, EXISTS prüft nur Existenz.",
+          "Der klassische Denkfehler: 'WHERE tnr = T1 AND tnr = T2' liefert immer eine leere Tabelle, weil eine Zeile in der Spalte tnr nur einen Wert haben kann."
+        ],
+        "2": [
+          "Für 'liefert T1 UND T2' braucht man zwei separate Unterabfragen mit AND verknüpft, weil eine Zeile nicht gleichzeitig T1 und T2 sein kann.",
+          "EXISTS ist fast immer korreliert und braucht den Korrelationsverweis (lt.lnr = l.lnr), sonst prüft es nur, ob irgendjemand T1 liefert — dann erscheinen alle Lieferanten.",
+          "NOT EXISTS ist das Werkzeug für 'hat nie' oder 'liefert nicht'-Fragen."
+        ],
+        "3": [
+          "NOT IN kann unerwartete Ergebnisse liefern, wenn die Ergebnismenge der Unterabfrage einen NULL-Wert enthält. Grund: x <> NULL ergibt UNKNOWN, und TRUE AND UNKNOWN = UNKNOWN → kein Datensatz kommt ins Ergebnis.",
+          "NOT EXISTS hat dieses Problem nicht, weil es nur Zeilenexistenz prüft, ohne Wertvergleiche mit NULL. Bei NOT-Abfragen mit nullable FKs sollte man NOT EXISTS bevorzugen.",
+          "Dieser NULL-Unterschied ist ein typisches 1er-Thema."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Lieferanten, die T1 UND T2 liefern (Aufgabe 12)",
+          "text": "Der Denkfehler und die korrekte Lösung.",
+          "code": "-- FALSCH: immer leer\nselect lnr from lt where tnr = 'T1' and tnr = 'T2';\n\n-- KORREKT mit IN:\nselect lnr, lname from l\nwhere lnr in (select lnr from lt where tnr = 'T1')\n  and lnr in (select lnr from lt where tnr = 'T2');"
+        }
+      ],
+      "fehler": [
+        "T1-und-T2-Denkfehler (AND auf derselben Spalte → immer leer).",
+        "IN und EXISTS bezüglich Korrelation verwechseln.",
+        "Korrelationsverweis bei EXISTS vergessen → gibt alle zurück.",
+        "NOT IN bei NULL-haltiger Unterabfrage → leeres Ergebnis."
+      ],
+      "cheatsheet": "tnr='T1' AND tnr='T2' → IMMER LEER!\nT1 UND T2: lnr IN(T1) AND lnr IN(T2)\n\nIN: Wert in Menge\nEXISTS: mind. 1 Zeile (korreliert!)\nNOT EXISTS: keine Zeile\n\nNOT EXISTS sicherer als NOT IN (NULL-Falle)\nEXISTS: Korrelationsverweis zwingend!"
+    },
+    {
+      "id": "all-some-any",
+      "title": "ANY, SOME und ALL",
+      "icon": "⚖️",
+      "category": "sql",
+      "pruefungsrelevanz": "Aufgabe 9 der Testanalyse. > ALL vs. > SOME war die häufigste Verwechslung.",
+      "levels": {
+        "1": [
+          "ALL, SOME und ANY vergleichen einen Wert mit einer Menge von Werten aus einer Unterabfrage. ALL bedeutet 'für alle Werte erfüllt', SOME bedeutet 'für mindestens einen erfüllt'. ANY ist ein exaktes Synonym für SOME.",
+          "> ALL entspricht > MAX (größer als jeder Wert, also größer als der größte). > SOME entspricht > MIN (größer als mindestens einer, also größer als der kleinste).",
+          "Beispiel mit roten Preisen 12, 14, 19: > ALL liefert Teile teurer als 19. > SOME liefert Teile teurer als 12."
+        ],
+        "2": [
+          "Die semantische Äquivalenz: > ALL ~ > MAX, > SOME ~ > MIN. Beide Varianten liefern identische Ergebnisse, wenn die Unterabfrage dieselbe Menge produziert.",
+          "Die Wahl zwischen den Varianten ist Stilfrage. Mit MAX/MIN ist die Semantik klarer, mit ALL/SOME ist die Abfrage kürzer.",
+          "= ANY (gleich irgendeinem Wert) ist äquivalent zu IN."
+        ],
+        "3": [
+          "Alle Kombinationen interpretieren können: < ALL ~ < MIN, < SOME ~ < MAX, = SOME ~ IN, <> ALL ~ NOT IN.",
+          "Merkhilfe: ALL → alle müssen stimmen → das Maximum ist die Hürde. SOME → mindestens einer reicht → das Minimum ist die Hürde.",
+          "Für eine 1 musst du das Äquivalenzschema nicht auswendig lernen, sondern aus dem Grundprinzip ableiten können."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "ALL vs. SOME (Aufgabe 9)",
+          "text": "Vier Varianten, zwei verschiedene Ergebnismengen.",
+          "code": "-- Rote Preise: 12, 14, 19\n\n-- > ALL: Teile teurer als 19 (= > MAX)\nselect * from t where preis > all\n  (select preis from t where farbe = 'rot');\n\n-- > SOME: Teile teurer als 12 (= > MIN)\nselect * from t where preis > some\n  (select preis from t where farbe = 'rot');"
+        }
+      ],
+      "fehler": [
+        "ALL und SOME verwechseln — syntaktisch korrekt, semantisch falsch.",
+        "> ALL als 'größer als irgendeinen' missverstehen (das ist > SOME).",
+        "ANY als Synonym für ALL halten (ANY = SOME).",
+        "Vergessen, dass SOME/ALL auch mit <, =, <> funktionieren."
+      ],
+      "cheatsheet": "> ALL → größer als ALLE → > MAX\n> SOME → größer als mind. 1 → > MIN\nANY = Synonym für SOME\n\n< ALL ~ < MIN | < SOME ~ < MAX\n= SOME ~ IN | <> ALL ~ NOT IN\n\nMerkhilfe:\nALL → alle stimmen → MAX ist die Hürde\nSOME → einer reicht → MIN ist die Hürde\n\nRote Preise (12,14,19): >ALL→>19, >SOME→>12"
+    },
+    {
+      "id": "outer-join",
+      "title": "OUTER JOIN",
+      "icon": "↔️",
+      "category": "sql",
+      "pruefungsrelevanz": "LEFT JOIN + IS NULL für fehlende Zuordnungen. count(*) vs. count(Spalte) ist eine häufige Falle.",
+      "levels": {
+        "1": [
+          "Ein OUTER JOIN behält Zeilen einer Tabelle, auch wenn keine passende Zeile in der anderen existiert. Fehlende Treffer werden mit NULL aufgefüllt.",
+          "LEFT JOIN behält alle Zeilen der linken Tabelle. INNER JOIN liefert nur Zeilen, für die auf beiden Seiten ein Partner existiert.",
+          "Das Muster für 'hat keinen Partner': LEFT JOIN kombiniert mit WHERE rechte_Schlüsselspalte IS NULL."
+        ],
+        "2": [
+          "Bei einem INNER JOIN auf l und lt fehlen Lieferanten ohne Lieferungen. Der LEFT JOIN macht sie sichtbar, mit NULL-Werten für alle lt-Spalten.",
+          "Man filtert auf die Schlüsselspalte der rechten Tabelle (lt.lnr IS NULL), nicht auf eine beliebige Spalte, weil diese bei fehlenden Treffern zuverlässig NULL ist.",
+          "RIGHT JOIN ist das Spiegelbild — wurde erwähnt, aber kaum mit Aufgaben belegt. In der Praxis ersetzt man ihn durch einen umgedrehten LEFT JOIN."
+        ],
+        "3": [
+          "Bei LEFT-JOIN-Aggregationen muss man count(Spalte) statt count(*) verwenden. count(*) zählt die NULL-Zeile mit und liefert 1 für Datensätze ohne Treffer. count(lt.tnr) liefert korrekt 0.",
+          "LEFT JOIN + IS NULL, NOT EXISTS und NOT IN sind drei äquivalente Lösungen für 'hat keinen Partner'. NOT IN ist bei NULL-Werten unsicher, die anderen beiden nicht.",
+          "Diese Verbindung zu NOT IN / NOT EXISTS zeigt, dass die drei Techniken dasselbe Problem unterschiedlich lösen."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Teile, die nie geliefert wurden",
+          "text": "LEFT JOIN + IS NULL.",
+          "code": "select t.tnr, t.tname\nfrom t\nleft join lt on t.tnr = lt.tnr\nwhere lt.tnr is null;\n\n-- IS NULL filtert Zeilen ohne Treffer rechts\n-- NICHT: = NULL (immer leer!)"
+        }
+      ],
+      "fehler": [
+        "INNER JOIN statt LEFT JOIN bei 'alle Datensätze'-Aufgaben.",
+        "Auf die falsche Spalte bei IS NULL filtern.",
+        "count(*) statt count(Spalte) bei Aggregation → 1 statt 0.",
+        "Tabellen beim LEFT JOIN vertauschen."
+      ],
+      "cheatsheet": "LEFT JOIN: alle links + NULL rechts wenn kein Treffer\nINNER JOIN: nur Zeilen mit Treffer auf beiden Seiten\n\nFehlende finden:\nLEFT JOIN ... WHERE rechte_Spalte IS NULL\n\nAggregation:\ncount(lt.tnr) → 0 bei kein Treffer (korrekt)\ncount(*) → 1 bei kein Treffer (falsch!)\n\nLEFT JOIN + IS NULL ≡ NOT EXISTS ≡ NOT IN(unsicher)"
+    },
+    {
+      "id": "mengenoperationen",
+      "title": "SQL-Mengenoperationen",
+      "icon": "⚗️",
+      "category": "sql",
+      "pruefungsrelevanz": "UNION, UNION ALL, INTERSECT, EXCEPT. Die EXCEPT-Reihenfolge ist kritisch.",
+      "levels": {
+        "1": [
+          "UNION = A oder B, Duplikate werden entfernt. UNION ALL = A oder B, Duplikate bleiben. INTERSECT = A und B (nur gemeinsame Zeilen). EXCEPT = A minus B (Reihenfolge entscheidend!).",
+          "Voraussetzung für alle: Beide Abfragen müssen dieselbe Spaltenanzahl haben und kompatible Datentypen.",
+          "EXCEPT ist nicht kommutativ: A EXCEPT B liefert Zeilen aus A, die nicht in B sind. B EXCEPT A ist ein anderes Ergebnis."
+        ],
+        "2": [
+          "Die vier Aufgabentypen: T1 ODER T2 → UNION. T1 UND T2 → INTERSECT. T1 nicht T2 → EXCEPT. Alle inkl. Duplikate → UNION ALL.",
+          "INTERSECT auf zwei lnr-Mengen ist äquivalent zur doppelten IN-Lösung. Beide liefern Lieferanten, die in beiden Mengen vorkommen.",
+          "ORDER BY darf nur einmal am Ende der gesamten Mengenoperation stehen, nicht in den Teilabfragen. Der Spaltenname im Ergebnis stammt aus der ersten Abfrage."
+        ],
+        "3": [
+          "EXCEPT, NOT EXISTS und NOT IN(sicher) lösen 'T1 aber nicht T2' alle gleich. EXCEPT ist syntaktisch am kompaktesten. NOT EXISTS ist robust bei NULL.",
+          "INTERSECT vs. doppeltes IN: semantisch äquivalent. INTERSECT ist kürzer, IN gibt Zugriff auf weitere Spalten aus l (z.B. lname).",
+          "Voraussetzungsfehler erkennen: SELECT lnr, lname FROM l UNION SELECT lnr FROM lt schlägt fehl wegen unterschiedlicher Spaltenanzahl."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Lieferanten, die T1 aber nicht T2 liefern",
+          "text": "EXCEPT mit korrekter Reihenfolge.",
+          "code": "(select lnr from lt where tnr = 'T1')\nexcept\n(select lnr from lt where tnr = 'T2');\n\n-- Reihenfolge vertauschen → anderes Ergebnis:\n-- (T2-Menge) EXCEPT (T1-Menge)\n-- liefert: T2 aber nicht T1"
+        }
+      ],
+      "fehler": [
+        "EXCEPT-Reihenfolge vertauschen → anderes Ergebnis.",
+        "UNION statt UNION ALL (oder umgekehrt) — Duplikate.",
+        "Unterschiedliche Spaltenanzahl → Syntaxfehler.",
+        "ORDER BY in die erste Teilabfrage schreiben."
+      ],
+      "cheatsheet": "UNION: A∪B (Duplikate weg)\nUNION ALL: A+B (Duplikate bleiben)\nINTERSECT: A∩B\nEXCEPT: A\\B (Reihenfolge wichtig!)\n\nT1 ODER T2 → UNION\nT1 UND T2 → INTERSECT (= doppeltes IN)\nT1 nicht T2 → EXCEPT (= NOT EXISTS)\n\nVoraussetzung: gleiche Spaltenanzahl!\nORDER BY: nur einmal am Ende!"
+    },
+    {
+      "id": "null-fallen",
+      "title": "NULL-Fallen in SQL",
+      "icon": "⚠️",
+      "category": "sql",
+      "pruefungsrelevanz": "Querschnittsthema. NULL taucht bei NOT IN, LEFT JOIN, count() und optionalen FKs auf.",
+      "levels": {
+        "1": [
+          "NULL bedeutet 'unbekannt' oder 'nicht vorhanden' — es ist kein Wert, sondern das Fehlen eines Wertes. NULL ist nicht leer (''), nicht null (0) und nicht false.",
+          "= NULL ist FALSCH. Jeder Vergleich mit = und NULL ergibt UNKNOWN. Der korrekte Vergleich ist IS NULL bzw. IS NOT NULL.",
+          "count(*) zählt alle Zeilen, auch NULL-Zeilen. count(Spalte) ignoriert NULL — es zählt nur Zeilen, in denen die Spalte einen Wert hat."
+        ],
+        "2": [
+          "Fast alle Aggregatfunktionen (SUM, AVG, MAX, MIN, count(Spalte)) ignorieren NULL. Nur count(*) zählt alle Zeilen. Besonders relevant bei LEFT JOIN, wo fehlende Treffer NULL-Zeilen erzeugen.",
+          "NOT IN mit NULL in der Unterabfrage liefert immer ein leeres Ergebnis. Grund: x <> NULL = UNKNOWN, TRUE AND UNKNOWN = UNKNOWN. NOT EXISTS hat dieses Problem nicht.",
+          "Bei LEFT JOIN werden fehlende Treffer mit NULL aufgefüllt. Fehlende Verknüpfungen erkennt man mit WHERE rechte_Spalte IS NULL."
+        ],
+        "3": [
+          "SQL verwendet eine Drei-Werte-Logik: TRUE, FALSE und UNKNOWN. Ein WHERE-Filter lässt nur Zeilen durch, bei denen die Bedingung TRUE ist. UNKNOWN wirkt wie FALSE.",
+          "Wichtige Konsequenzen: NULL = NULL → UNKNOWN. x = NULL → UNKNOWN. NOT UNKNOWN → UNKNOWN. Deshalb filtert WHERE spalte = NULL nie etwas durch.",
+          "Zusammenhang mit dem ERD: Ein nullable FK entsteht, wenn der ERD-Entitytyp mit min=0 teilnimmt. NULL in SQL ist die direkte Konsequenz einer Modellierungsentscheidung."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "NOT IN Falle mit NULL",
+          "text": "Wenn lt.lnr einen NULL-Wert enthält.",
+          "code": "-- RISKANT (wenn lt.lnr NULL enthalten kann):\nselect lnr from l\nwhere lnr not in (select lnr from lt);\n-- → leeres Ergebnis!\n\n-- SICHER:\nselect l.lnr from l\nwhere not exists (select * from lt where lt.lnr = l.lnr);"
+        }
+      ],
+      "fehler": [
+        "= NULL statt IS NULL (immer leeres Ergebnis).",
+        "count(*) statt count(Spalte) bei LEFT-JOIN-Aggregation.",
+        "NOT IN bei NULL-haltiger Unterabfrage.",
+        "NULL mit '' oder 0 verwechseln."
+      ],
+      "cheatsheet": "= NULL → IMMER FALSCH\nIS NULL / IS NOT NULL → korrekt\n\ncount(*) → alle Zeilen inkl. NULL\ncount(Spalte) → ignoriert NULL\n\nNOT IN + NULL → leeres Ergebnis (Falle!)\n→ NOT EXISTS verwenden\n\nDrei-Werte-Logik: TRUE / FALSE / UNKNOWN\nNULL = NULL → UNKNOWN (nicht TRUE!)\n\nmin=0 im ERD → nullable FK"
+    },
+    {
+      "id": "pruefungsfehler",
+      "title": "Prüfungsfehler & Gegenstrategien",
+      "icon": "🎯",
+      "category": "wiederholung",
+      "pruefungsrelevanz": "Die 10 häufigsten Fehler aus der echten Testanalyse. Finale Wiederholung für den Tag vor der Prüfung.",
+      "levels": {
+        "1": [
+          "Die drei ERD-Kontrollfragen nach jeder Aufgabe: 1) Ist es 1:1? → UNIQUE vorhanden? 2) FK auf die richtige Seite (max=1)? 3) NOT NULL oder nullable → min der FK-Seite?",
+          "Die häufigsten ERD-Fehler: UNIQUE bei 1:1 vergessen (Aufgaben 1, 7, 10), FK auf falsche Seite bei 1:n (Aufgabe 6), UNIQUE bei 1:n setzen (Aufgaben 1, 2), (1,1) mit abhängigem Entitytyp verwechseln (Aufgabe 4)."
+        ],
+        "2": [
+          "Die SQL-Kontrollfragen: Unterabfrage mit =,>,< → kann sie mehrere Werte liefern? → MAX/ALL/SOME. AND auf derselben Spalte? → zwei Unterabfragen. NOT IN → NULL möglich? → NOT EXISTS.",
+          "Die häufigsten SQL-Fehler: Mehrfachwert-Fehler (Aufgabe 9), T1-und-T2-Denkfehler (Aufgabe 12), EXCEPT-Richtung vertauscht, count(*) statt count(Spalte), = NULL statt IS NULL."
+        ],
+        "3": [
+          "Für eine 1 musst du Fehler nicht nur vermeiden, sondern begründen: Warum reicht (1,1)-Teilnahme nicht für einen abhängigen Entitytyp? Weil das eine Frage des Schlüssels ist (FK im PK), nicht der Teilnahme.",
+          "Warum ist NOT IN bei NULL leer? Weil x <> NULL = UNKNOWN und WHERE nur TRUE durchlässt. Warum FK in max=1-Seite? Weil eine Spalte nur einen Wert speichern kann."
+        ]
+      },
+      "beispiele": [
+        {
+          "titel": "Die drei ERD-Kontrollfragen",
+          "text": "Nach jeder ERD-Aufgabe mechanisch durchgehen.",
+          "code": "1. Ist es 1:1? → UNIQUE vorhanden?\n2. FK auf richtige Seite (max=1)?\n3. NOT NULL oder nullable → min der FK-Seite?\n\nVermeidet die drei häufigsten Fehler\ndes ersten Tests."
+        }
+      ],
+      "fehler": [
+        "1:1 ohne UNIQUE → UNIQUE hinzufügen.",
+        "NOT NULL falsche Seite → min der FK-Seite lesen.",
+        "UNIQUE bei 1:n → entfernen.",
+        "AND auf derselben Spalte → zwei Unterabfragen.",
+        "= NULL → IS NULL."
+      ],
+      "cheatsheet": "1:1 ohne UNIQUE → UNIQUE hinzufügen!\nNOT NULL falsche Seite → min der FK-Seite!\nFK falsche Seite → FK in max=1-Seite!\nUNIQUE bei 1:n → entfernen!\n(1,1) = abh.Typ → abh.Typ = FK im PK!\nMehrfachwert → MAX/ALL/SOME\nAND selbe Spalte → zwei Unterabfragen!\nEXCEPT-Richtung → erste = Basis\ncount(*) bei LEFT → count(Spalte)\n= NULL → IS NULL!\n\nDrei ERD-Kontrollfragen:\n1. 1:1? → UNIQUE?\n2. FK auf max=1-Seite?\n3. NOT NULL/nullable → min der FK-Seite?"
+    }
+  ]
+}

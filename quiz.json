@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "title": "Quiz & Drills",
+    "beschreibung": "Prüfungsfragen mit Musterlösungen auf drei Niveaus, plus Mini-Drills und Checklisten für den Tag vor der Prüfung."
+  },
+  "questions": [
+    { "id": "q01", "topic": "chen-notation", "level": 1, "question": "Was bedeutet die Kardinalität (0,n) bei einem Entitytyp?", "answer": "Der Entitytyp nimmt optional und beliebig oft teil. min=0 → darf ohne Partner existieren (FK NULL erlaubt). max=n → keine Obergrenze für Teilnahmen." },
+    { "id": "q02", "topic": "beziehungstypen", "level": 1, "question": "Welche Werte entscheiden über den Beziehungstyp (1:1, 1:n, m:n)?", "answer": "Ausschließlich die max-Werte. beide max=1 → 1:1. ein max=n → 1:n. beide max=n → m:n. Die min-Werte spielen für den Typ keine Rolle." },
+    { "id": "q03", "topic": "11-beziehungen", "level": 1, "question": "Was braucht der FK bei einer 1:1-Beziehung immer?", "answer": "UNIQUE. Immer. Ohne Ausnahme. Fehlt UNIQUE, kann derselbe FK-Wert mehrfach vorkommen → das DBMS erzwingt technisch eine 1:n-Beziehung." },
+    { "id": "q04", "topic": "1n-beziehungen", "level": 1, "question": "Gegeben: [A]---(1,n)---(0,1)---[B]. Wohin kommt der FK, und ist er NOT NULL?", "answer": "FK in B (Seite mit max=1). Nullable (min_B=0). NICHT NOT NULL wegen min_A=1 — das ist der min-Wert der falschen Seite!" },
+    { "id": "q05", "topic": "abhaengige-entitytypen", "level": 1, "question": "Woran erkennt man einen abhängigen Entitytyp sicher?", "answer": "FK ist Teil des PKs (PK/FK). (1,1)-Teilnahme allein reicht NICHT — das ist die häufigste Verwechslung (Aufgabe 4 Testanalyse)." },
+    { "id": "q06", "topic": "unterabfragen", "level": 1, "question": "Warum schlägt 'WHERE preis > (SELECT preis FROM t WHERE farbe=rot)' fehl?", "answer": "Der Operator > erwartet genau 1 Wert. Die Unterabfrage liefert mehrere Zeilen (einen Preis pro rotem Teil). Fix: MAX(preis) oder >ALL oder >SOME." },
+    { "id": "q07", "topic": "in-exists", "level": 1, "question": "Warum liefert 'WHERE tnr=T1 AND tnr=T2' immer ein leeres Ergebnis?", "answer": "Eine einzelne Zeile kann in der Spalte tnr nicht gleichzeitig zwei verschiedene Werte haben. Die Bedingung ist logisch immer FALSE. Fix: zwei separate Unterabfragen mit AND." },
+    { "id": "q08", "topic": "null-fallen", "level": 1, "question": "Was ist der Unterschied zwischen count(*) und count(Spalte) bei einem LEFT JOIN?", "answer": "count(*) zählt alle Zeilen inkl. NULL-Zeilen → liefert 1 für Datensätze ohne Treffer. count(Spalte) ignoriert NULL → liefert korrekt 0 für Datensätze ohne Treffer." },
+    { "id": "q09", "topic": "kraehenfuss", "level": 1, "question": "Was bedeutet das Krähenfuß-Symbol ||< ?", "answer": "(1,n): erster Strich = min=1 (verpflichtend), Krähenfuß = max=n (viele). Der Entitytyp muss teilnehmen und kann beliebig viele Partner haben." },
+    { "id": "q10", "topic": "all-some-any", "level": 1, "question": "Rote Teile haben Preise 12, 14, 19. Was liefert >ALL(...) vs. >SOME(...)?", "answer": ">ALL liefert Teile teurer als 19 (größer als ALLE = >MAX). >SOME liefert Teile teurer als 12 (größer als mind. einen = >MIN). Fundamentaler Unterschied!" },
+    { "id": "q11", "topic": "beziehungstypen", "level": 2, "question": "Gegeben: [Mitarbeiter]---(0,1)---leitet---(1,1)---[Restaurant]. Bestimme: Beziehungstyp, FK-Seite, NOT NULL, UNIQUE.", "answer": "Beziehungstyp: beide max=1 → 1:1. FK in Restaurant (vollständige Seite, min=1). NOT NULL (min_Restaurant=1). UNIQUE (weil 1:1). → Restaurant(Nr PK, MitarbeiterNr FK NOT NULL UNIQUE)" },
+    { "id": "q12", "topic": "1n-beziehungen", "level": 2, "question": "Welche 3 Aussagen zu [A]---(1,n)---ab---(0,1)---[B] sind korrekt? (a) m:n (b) A nimmt vollständig teil (c) FK in A (d) A ist n-Seite (e) FK nullable (f) FK NOT NULL", "answer": "(b), (d), (e) sind korrekt. (b): A hat min=1 → vollständig. (d): A hat max=n → n-Seite. (e): FK in B, min_B=0 → nullable. Fehler: (a) 1:n nicht m:n. (c) FK in B. (f) min_B=0 → nullable." },
+    { "id": "q13", "topic": "abhaengige-entitytypen", "level": 2, "question": "Erkläre, warum Saal im Kino-ERD ein abhängiger Entitytyp ist. Schreibe die DDL.", "answer": "SaalNr allein nicht eindeutig (Saal 1 gibt es in jedem Kino). Erst (KinoNr, SaalNr) eindeutig. KinoNr = FK + Teil des PK.\n\nCREATE TABLE Saal (\n  KinoNr INTEGER NOT NULL REFERENCES Kino,\n  SaalNr INTEGER NOT NULL,\n  PRIMARY KEY (KinoNr, SaalNr)\n);" },
+    { "id": "q14", "topic": "mn-beziehungen", "level": 2, "question": "Warum gehört menge in die Tabelle lt, nicht in l oder t?", "answer": "Weil menge eine Eigenschaft der Lieferbeziehung ist, nicht des Lieferanten oder Teils allein. Derselbe Lieferant kann verschiedene Teile in verschiedenen Mengen liefern → die Menge hängt von der Kombination (lnr, tnr) ab." },
+    { "id": "q15", "topic": "korrelierte-unterabfragen", "level": 2, "question": "Welche der Unterabfragen ist korreliert? (a) WHERE lnr IN (SELECT lnr FROM lt) (b) WHERE EXISTS (SELECT * FROM lt WHERE lt.lnr = l.lnr) (c) WHERE lnr IN (SELECT lnr FROM lt WHERE tnr=T1)", "answer": "Nur (b) ist korreliert. lt.lnr = l.lnr → l.lnr kommt von der äußeren Abfrage. (a) und (c) können alleine ausgeführt werden → nicht korreliert." },
+    { "id": "q16", "topic": "mengenoperationen", "level": 2, "question": "Schreibe SQL für: Lieferanten die T1 liefern aber NICHT T2. Welcher Operator?", "answer": "EXCEPT:\n(SELECT lnr FROM lt WHERE tnr=T1)\nEXCEPT\n(SELECT lnr FROM lt WHERE tnr=T2);\n\nAchtung: Reihenfolge entscheidend! T1-Menge EXCEPT T2-Menge, nicht umgekehrt." },
+    { "id": "q17", "topic": "outer-join", "level": 2, "question": "Schreibe SQL für: Alle Teile, die NOCH NIE geliefert wurden. Verwende LEFT JOIN.", "answer": "SELECT t.tnr, t.tname\nFROM t\nLEFT JOIN lt ON t.tnr = lt.tnr\nWHERE lt.tnr IS NULL;\n\nIS NULL filtert Zeilen ohne Treffer in lt. NICHT: = NULL (immer leer)!" },
+    { "id": "q18", "topic": "erd-rekonstruieren", "level": 2, "question": "Gegeben: Angestellter(SVN PK) | Filiale(FilialNr PK, LeiterSVN FK→Angestellter NOT NULL UNIQUE). Rekonstruiere das ERD.", "answer": "[Angestellter]---(?,1)---leitet---(1,1)---[Filiale]. UNIQUE → 1:1. NOT NULL → Filiale vollständig (min=1). Angestellter-min: NICHT ableitbar (→ wahrscheinlich 0, aber Fragezeichen korrekt)." },
+    { "id": "q19", "topic": "11-beziehungen", "level": 3, "question": "Folgende DDL soll 1:1 implementieren: Restaurant(Nr PK, MitarbeiterNr INT NOT NULL REFERENCES Mitarbeiter). Finde ALLE Fehler.", "answer": "Fehler: fehlendes UNIQUE. Ohne UNIQUE können mehrere Restaurants denselben Mitarbeiter referenzieren → technisch 1:n, nicht 1:1. Korrekt: MitarbeiterNr INT NOT NULL UNIQUE REFERENCES Mitarbeiter" },
+    { "id": "q20", "topic": "null-fallen", "level": 3, "question": "Erkläre warum NOT IN bei NULL-haltiger Unterabfrage immer leer ist. Beziehe dich auf die Drei-Werte-Logik.", "answer": "NOT IN expandiert zu: x<>A AND x<>B AND x<>NULL. x<>NULL = UNKNOWN (Drei-Werte-Logik). TRUE AND UNKNOWN = UNKNOWN. WHERE lässt nur TRUE durch → kein Datensatz. NOT EXISTS prüft Existenz, keine Wertgleichheit → kein Problem." },
+    { "id": "q21", "topic": "all-some-any", "level": 3, "question": "Blaue Teile haben Preise 17 und 25. Was liefert: WHERE preis > SOME (SELECT preis FROM t WHERE farbe=blau)?", "answer": "Schritt 1: Unterabfrage → {17, 25}. Schritt 2: >SOME = größer als mind. einen = >MIN(17,25) = >17. Schritt 3: Alle Teile mit preis > 17. Teile mit genau 17 nicht (strikt >)." },
+    { "id": "q22", "topic": "mehrwertige-beziehungen", "level": 3, "question": "Warum reichen drei binäre Beziehungen NICHT als Ersatz für den ternären Beziehungstyp unterrichtet(Klasse, Lehrer, Fach)?", "answer": "'Lehrer unterrichtet Klasse' + 'Lehrer lehrt Fach' + 'Klasse hat Fach' kann nicht aussagen, OB Lehrer A die Klasse X IN Fach M unterrichtet. Die Dreier-Kombination geht verloren. Genau das speichert der ternäre Beziehungstyp." },
+    { "id": "q23", "topic": "erd-tabellen", "level": 3, "question": "Warum braucht Vorstellung im Kino-ERD einen expliziten FOREIGN KEY-Block statt 'references Saal'?", "answer": "Weil der PK von Saal aus zwei Spalten besteht (KinoNr, SaalNr). Ein einfaches 'references Saal' kann nicht ausdrücken, welche Spalten auf welchen Teil des zusammengesetzten PKs zeigen. Nötig: FOREIGN KEY (KinoNr, SaalNr) REFERENCES Saal(KinoNr, SaalNr)." },
+    { "id": "q24", "topic": "umwandlung", "level": 2, "question": "Wandle [Produkt](1,1)---gehört zu---(0,n)[Kategorie] in Krähenfußnotation um.", "answer": "Produkt (1,1) → ||. Kategorie (0,n) → o<. Ergebnis: Kategorie ||----o< Produkt. Das || steht bei Kategorie (jedes Produkt gehört zu genau einer), das o< bei Produkt (eine Kategorie hat 0 bis viele)." }
+  ],
+  "drills": [
+    { "q": "[A]---(1,n)---(0,1)---[B] — Wo kommt der FK hin? Ist er NOT NULL?", "a": "FK in B (max_B=1), nullable (min_B=0). NICHT NOT NULL wegen min_A!" },
+    { "q": "ERD zeigt 1:1. Was braucht der FK immer?", "a": "UNIQUE. Immer. Ohne Ausnahme." },
+    { "q": "PK = (FK + Teilschlüssel). Was ist das?", "a": "Abhängiger Entitytyp. (1,1) allein reicht NICHT." },
+    { "q": "WHERE preis > (SELECT preis FROM t WHERE farbe=rot) — Was kann schiefgehen?", "a": "Mehrere rote Preise → Laufzeitfehler. Fix: MAX(preis) oder ALL." },
+    { "q": "WHERE tnr=T1 AND tnr=T2 — Was gibt das zurück?", "a": "IMMER LEER. Eine Zeile kann nicht gleichzeitig T1 und T2 sein." },
+    { "q": "count(*) bei LEFT JOIN — was zählt es für Datensätze ohne Treffer?", "a": "1 (falsch). Korrekt: count(rechte_Spalte) → 0." },
+    { "q": "Richtige SQL-Syntax für NULL-Prüfung?", "a": "IS NULL / IS NOT NULL. NIEMALS = NULL." },
+    { "q": "(T1-Menge) EXCEPT (T2-Menge) — Was liefert das?", "a": "Lieferanten die T1, aber NICHT T2 liefern." },
+    { "q": "Beide max-Werte = 1 im ERD. Was folgt für den FK?", "a": "1:1-Beziehung → FK + UNIQUE." },
+    { "q": "FK vorhanden, kein UNIQUE, beide Seiten max=1. Problem?", "a": "DBMS erzwingt keine 1:1. Mehrere Zeilen können selben FK-Wert haben → technisch 1:n." },
+    { "q": ">ALL entspricht welcher Aggregatfunktion? >SOME?", "a": ">ALL ~ >MAX. >SOME ~ >MIN." },
+    { "q": "Ternärer Beziehungstyp: woraus besteht der PK?", "a": "Aus ALLEN beteiligten FKs zusammen. Beziehungsattribute sind kein PK-Teil." }
+  ],
+  "checklists": [
+    {
+      "id": "erd",
+      "titel": "ERD-Aufgaben Checkliste",
+      "items": [
+        "Beziehungstyp aus max-Werten (nicht min-Werten) bestimmt",
+        "FK auf die Seite mit max=1 gelegt",
+        "Bei 1:1: UNIQUE vorhanden?",
+        "Bei 1:n: kein UNIQUE gesetzt?",
+        "NOT NULL / nullable aus min-Wert der FK-Seite",
+        "Abhängiger Entitytyp: FK ist Teil des PKs?",
+        "Erstellungsreihenfolge: abhängige Tabellen nach Referenzen?"
+      ]
+    },
+    {
+      "id": "sql",
+      "titel": "SQL-Aufgaben Checkliste",
+      "items": [
+        "Unterabfrage mit =, >, < → kann sie mehrere Werte liefern? → max()/ALL/SOME",
+        "AND auf derselben Spalte? → zwei separate Unterabfragen",
+        "NOT IN → NULL möglich? → NOT EXISTS verwenden",
+        "EXCEPT-Richtung: erste Abfrage = Basis-Menge?",
+        "LEFT JOIN + count: count(Spalte) statt count(*)?",
+        "NULL-Vergleich: IS NULL statt = NULL?"
+      ]
+    }
+  ]
+}

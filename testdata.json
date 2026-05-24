@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "title": "Testanalyse — Erster Test",
+    "beschreibung": "Aufgaben des ersten Tests mit den tatsächlich gemachten Fehlern und den korrekten Lösungen. Grundlage für die gezielte Vorbereitung auf den Wiederholungstest.",
+    "note": "5 auf dem ersten Test. Ziel: 1 beim Wiederholungstest am 28.05.2026."
+  },
+  "aufgaben": [
+    {
+      "nr": 1,
+      "thema": "1:1-Beziehung implementieren",
+      "topicId": "11-beziehungen",
+      "frage": "Implementiere die 1:1-Beziehung zwischen Mitarbeiter und Restaurant korrekt mit FK, NOT NULL und UNIQUE.",
+      "fehler": "UNIQUE-Constraint beim FK vergessen. Ohne UNIQUE ist es technisch eine 1:n-Beziehung.",
+      "regel": "Jede 1:1-Beziehung braucht FK + UNIQUE. Falsche Antwort B: 'NULL ist nicht immer erlaubt'. Falsche Antwort G: 'UNIQUE nur bei vollständiger Teilnahme nötig' — UNIQUE ist IMMER nötig bei 1:1.",
+      "loesung": "Restaurant(RestaurantNr PK, MitarbeiterNr FK NOT NULL UNIQUE REFERENCES Mitarbeiter)"
+    },
+    {
+      "nr": 2,
+      "thema": "NULL / NOT NULL aus min-Wert",
+      "topicId": "1n-beziehungen",
+      "frage": "Bestimme korrekt, ob der FK NOT NULL oder nullable sein muss.",
+      "fehler": "NOT NULL aus dem min-Wert der falschen Seite abgeleitet. Außerdem UNIQUE bei einer 1:n-Beziehung gesetzt.",
+      "regel": "Der min-Wert der Seite, die den FK ENTHÄLT, entscheidet über NOT NULL. UNIQUE gehört nur zu 1:1.",
+      "loesung": "FK NOT NULL nur wenn die FK-Seite min=1 hat. Kein UNIQUE bei 1:n."
+    },
+    {
+      "nr": 4,
+      "thema": "Abhängige Entitytypen",
+      "topicId": "abhaengige-entitytypen",
+      "frage": "Welche Aussagen zum abhängigen Entitytyp sind korrekt?",
+      "fehler": "(1,1)-Teilnahme als Merkmal eines abhängigen Entitytyps gewertet (falsche Antwort G).",
+      "regel": "Abhängiger Entitytyp = FK ist Teil des PKs. (1,1) allein reicht NICHT — das beschreibt nur die Teilnahmevorschrift, nicht die Identitätsabhängigkeit.",
+      "loesung": "Saal(KinoNr PK/FK, SaalNr PK). Der FK KinoNr ist Teil des PKs → abhängiger Entitytyp."
+    },
+    {
+      "nr": 5,
+      "thema": "ERD in DDL umsetzen (mehrstufig)",
+      "topicId": "erd-tabellen",
+      "frage": "Setze das Kino-ERD (Kino → Saal → Vorstellung) vollständig in DDL um.",
+      "fehler": "Zusammengesetzten FK-Block für Vorstellung vergessen; ein einfaches 'references Saal' reicht nicht.",
+      "regel": "Bei mehrteiligem PK der referenzierten Tabelle braucht man einen expliziten FOREIGN KEY-Block. Reihenfolge: Kino → Saal → Vorstellung.",
+      "loesung": "Vorstellung: FOREIGN KEY (KinoNr, SaalNr) REFERENCES Saal(KinoNr, SaalNr)"
+    },
+    {
+      "nr": 6,
+      "thema": "FK-Platzierung bei 1:n",
+      "topicId": "1n-beziehungen",
+      "frage": "Gegeben [A](1,n)---ab---(0,1)[B]. Wohin kommt der FK, NOT NULL oder nullable?",
+      "fehler": "FK in A statt B platziert; NOT NULL wegen min_A=1 gesetzt (min der falschen Seite).",
+      "regel": "FK kommt in die Seite mit max=1 (hier B). NULL-Entscheidung über min der FK-Seite (min_B=0 → nullable).",
+      "loesung": "B(B_ID PK, A_ID FK nullable). Kein UNIQUE, weil 1:n."
+    },
+    {
+      "nr": 7,
+      "thema": "1:1 mit optionaler Seite",
+      "topicId": "11-beziehungen",
+      "frage": "Mitarbeiter (0,1) leitet Restaurant (1,1). Bestimme FK-Seite, NOT NULL, UNIQUE.",
+      "fehler": "FK auf die optionale Seite (Mitarbeiter) statt auf die vollständige Seite (Restaurant) gelegt (falsche Antwort E).",
+      "regel": "FK auf die vollständig teilnehmende Seite (min=1). Dort ist er NOT NULL + UNIQUE.",
+      "loesung": "Restaurant(RestaurantNr PK, MitarbeiterNr FK NOT NULL UNIQUE)"
+    },
+    {
+      "nr": 8,
+      "thema": "Krähenfuß-Umwandlung",
+      "topicId": "umwandlung",
+      "frage": "Wandle [Produkt](1,1)---gehört zu---(0,n)[Kategorie] in Krähenfußnotation um.",
+      "fehler": "Symbole auf der falschen Seite platziert.",
+      "regel": "Produkt (1,1) → ||, Kategorie (0,n) → o<. Symbol steht neben dem Entitytyp, den es beschreibt.",
+      "loesung": "Kategorie ||----o< Produkt"
+    },
+    {
+      "nr": 9,
+      "thema": "Unterabfrage mit mehreren Werten",
+      "topicId": "all-some-any",
+      "frage": "Warum schlägt 'WHERE preis > (SELECT preis FROM t WHERE farbe='rot')' fehl? Welche Varianten sind korrekt?",
+      "fehler": "Einfacher Vergleich bei mehreren roten Preisen; ALL und SOME verwechselt.",
+      "regel": "> erwartet 1 Wert. Fix: MAX(preis), > ALL (= >MAX) oder > SOME (= >MIN). ALL und SOME liefern verschiedene Ergebnisse!",
+      "loesung": "Rote Preise 12,14,19: > ALL → > 19. > SOME → > 12. > MAX entspricht > ALL."
+    },
+    {
+      "nr": 11,
+      "thema": "Korrelierte Unterabfragen erkennen",
+      "topicId": "korrelierte-unterabfragen",
+      "frage": "Welche der gegebenen Unterabfragen ist korreliert?",
+      "fehler": "EXISTS automatisch als korreliert gewertet, ohne den Verweis auf die äußere Abfrage zu prüfen.",
+      "regel": "Korreliert = innere Abfrage verwendet einen Wert von außen (z.B. l.lnr). Erkennungstest: Kann die innere Abfrage alleine laufen?",
+      "loesung": "where exists (select * from lt where lt.lnr = l.lnr) → korreliert (l.lnr von außen)."
+    },
+    {
+      "nr": 12,
+      "thema": "Lieferanten, die T1 und T2 liefern",
+      "topicId": "in-exists",
+      "frage": "Schreibe eine Abfrage für Lieferanten, die sowohl T1 als auch T2 liefern.",
+      "fehler": "WHERE tnr='T1' AND tnr='T2' geschrieben → immer leeres Ergebnis.",
+      "regel": "Eine Zeile kann nicht gleichzeitig zwei Werte haben. Lösung: zwei separate Unterabfragen mit AND.",
+      "loesung": "WHERE lnr IN (... tnr='T1') AND lnr IN (... tnr='T2')"
+    }
+  ]
+}
