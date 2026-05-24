@@ -12,6 +12,11 @@
 
   <!-- Header -->
   <header id="header">
+    <button id="hamburger" aria-label="Menü öffnen">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
     <div class="header-logo" id="header-logo">DBI_1</div>
     <div class="header-title" id="header-title">Lernhub</div>
     <div class="header-badge" id="header-badge"></div>
@@ -114,6 +119,7 @@
       </div>
 
       <div class="quiz-filter" id="quiz-filter"></div>
+      <div class="quiz-shuffle-info" id="quiz-shuffle-info"></div>
       <div id="quiz-questions"></div>
     </section>
 
@@ -129,6 +135,18 @@
 
   </main>
 </div>
+
+<!-- Mobile Nav Drawer -->
+<nav id="mobile-nav">
+  <button class="nav-btn" data-view="home">Themen</button>
+  <button class="nav-btn" data-view="sql">SQL</button>
+  <button class="nav-btn" data-view="testanalyse">Testanalyse</button>
+  <button class="nav-btn" data-view="quiz">Quiz</button>
+  <button class="nav-btn" data-view="drills">Drills</button>
+</nav>
+
+<!-- Overlay -->
+<div id="overlay"></div>
 
 <script src="script.js"></script>
 </body>
