@@ -5,6 +5,8 @@
 
 'use strict';
 
+const STORAGE_KEY = 'dbi_lernhub_quiz_v1';
+
 const state = {
   data: null,
   testdata: null,
@@ -13,8 +15,35 @@ const state = {
   view: 'home',
   activeLevel: '1',
   quizFilter: 'all',
-  quizStats: { correct: 0, wrong: 0, revealed: {} }
+  quizStats: { correct: 0, wrong: 0, revealed: {} },
+  shuffledQuestions: []
 };
+
+/* ── LocalStorage ───────────────────────────────────────── */
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.quizStats));
+  } catch(e) {}
+}
+
+function loadProgress() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      state.quizStats = JSON.parse(saved);
+    }
+  } catch(e) {}
+}
+
+/* ── Shuffle ────────────────────────────────────────────── */
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 /* ── Init ───────────────────────────────────────────────── */
 async function init() {
@@ -30,10 +59,14 @@ async function init() {
     state.sqldata = s;
     state.quizdata = q;
 
+    loadProgress();
+    state.shuffledQuestions = shuffleArray(state.quizdata.questions);
+
     applyMeta();
     buildSidebar();
     buildHome();
     setupNav();
+    setupHamburger();
     showView('home');
     setActiveNav('home');
   } catch (e) {
@@ -52,6 +85,48 @@ function applyMeta() {
   document.getElementById('home-title').innerHTML = m.fach + ' — <span>Lernhub</span>';
   document.getElementById('home-subtitle').textContent =
     'Wähle ein Thema oder starte das Quiz. Level 1 = Grundwissen, Level 3 = 1er-Niveau.';
+}
+
+/* ── Hamburger ──────────────────────────────────────────── */
+function setupHamburger() {
+  const btn = document.getElementById('hamburger');
+  const nav = document.getElementById('mobile-nav');
+  const overlay = document.getElementById('overlay');
+  if (!btn || !nav || !overlay) return;
+
+  function closeMenu() {
+    btn.classList.remove('open');
+    nav.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+
+  btn.addEventListener('click', () => {
+    const isOpen = nav.classList.contains('open');
+    if (isOpen) {
+      closeMenu();
+    } else {
+      btn.classList.add('open');
+      nav.classList.add('open');
+      overlay.classList.add('open');
+    }
+  });
+
+  overlay.addEventListener('click', closeMenu);
+
+  nav.querySelectorAll('.nav-btn').forEach(navBtn => {
+    navBtn.addEventListener('click', () => {
+      const view = navBtn.dataset.view;
+      if (view === 'home') buildHome();
+      if (view === 'sql') buildSql();
+      if (view === 'testanalyse') buildTestanalyse();
+      if (view === 'quiz') buildQuiz();
+      if (view === 'drills') buildDrills();
+      showView(view);
+      setActiveNav(view);
+      setActiveSidebar(null);
+      closeMenu();
+    });
+  });
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
@@ -88,7 +163,7 @@ function setActiveSidebar(id) {
 
 /* ── Navigation ─────────────────────────────────────────── */
 function setupNav() {
-  document.querySelectorAll('.nav-btn').forEach(btn => {
+  document.querySelectorAll('.header-nav .nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const view = btn.dataset.view;
       if (view === 'home') buildHome();
@@ -147,7 +222,6 @@ function openTopic(id) {
   document.getElementById('topic-title').textContent = topic.title;
   document.getElementById('topic-pruefung').textContent = topic.pruefungsrelevanz;
 
-  // Levels
   ['1', '2', '3'].forEach(lvl => {
     const content = document.querySelector('.level-content[data-level="' + lvl + '"]');
     const paras = topic.levels[lvl] || [];
@@ -165,13 +239,11 @@ function openTopic(id) {
       '</div>';
   });
 
-  // Level-Tabs
   document.querySelectorAll('.level-tab').forEach(tab => {
     tab.onclick = () => switchLevel(tab.dataset.level);
   });
   switchLevel('1');
 
-  // Beispiele
   const bColl = document.getElementById('topic-beispiele');
   if (topic.beispiele && topic.beispiele.length) {
     bColl.innerHTML = '<h3>Beispiele</h3>' +
@@ -186,7 +258,6 @@ function openTopic(id) {
     bColl.innerHTML = '';
   }
 
-  // Fehler
   const fColl = document.getElementById('topic-fehler');
   if (topic.fehler && topic.fehler.length) {
     fColl.innerHTML = '<h3>Typische Fehler</h3>' +
@@ -197,7 +268,6 @@ function openTopic(id) {
     fColl.innerHTML = '';
   }
 
-  // Cheatsheet
   document.getElementById('topic-cheatsheet').innerHTML = highlightCheatsheet(topic.cheatsheet);
 
   showView('topic');
@@ -216,7 +286,6 @@ function buildSql() {
   document.getElementById('sql-title').textContent = state.sqldata.meta.title;
   document.getElementById('sql-subtitle').textContent = state.sqldata.meta.beschreibung;
 
-  // Schemas
   const schemaPanel = document.getElementById('sql-schemas');
   schemaPanel.innerHTML = state.sqldata.schemas.map(s =>
     '<div class="sql-card">' +
@@ -232,7 +301,6 @@ function buildSql() {
     '</div>'
   ).join('');
 
-  // Queries
   const queryPanel = document.getElementById('sql-queries');
   queryPanel.innerHTML = state.sqldata.queries.map(q =>
     '<div class="sql-card">' +
@@ -248,7 +316,6 @@ function buildSql() {
     '</div>'
   ).join('');
 
-  // Tabs
   document.querySelectorAll('.sql-tab').forEach(tab => {
     tab.onclick = () => {
       document.querySelectorAll('.sql-tab').forEach(t =>
@@ -257,13 +324,11 @@ function buildSql() {
         p.classList.toggle('active', p.id === 'sql-' + tab.dataset.sqltab));
     };
   });
-  // default
   document.querySelector('.sql-tab[data-sqltab="schemas"]').classList.add('active');
   document.querySelector('.sql-tab[data-sqltab="queries"]').classList.remove('active');
   document.getElementById('sql-schemas').classList.add('active');
   document.getElementById('sql-queries').classList.remove('active');
 
-  // Aufklapp-Verhalten
   bindCardToggles(document.getElementById('view-sql'), '.sql-card', '.sql-card-head');
 }
 
@@ -314,6 +379,8 @@ function buildQuizFilter() {
   });
   document.getElementById('quiz-reset').onclick = () => {
     state.quizStats = { correct: 0, wrong: 0, revealed: {} };
+    state.shuffledQuestions = shuffleArray(state.quizdata.questions);
+    saveProgress();
     buildQuiz();
   };
 }
@@ -323,8 +390,14 @@ function renderQuizCards() {
   const topicTitles = {};
   state.data.topics.forEach(t => topicTitles[t.id] = t.title);
 
-  const filtered = state.quizdata.questions.filter(q =>
+  const filtered = state.shuffledQuestions.filter(q =>
     state.quizFilter === 'all' || String(q.level) === state.quizFilter);
+
+  // Shuffle-Info anzeigen
+  const shuffleInfo = document.getElementById('quiz-shuffle-info');
+  if (shuffleInfo) {
+    shuffleInfo.textContent = '🔀 Fragen werden zufällig gemischt — Fortschritt wird gespeichert';
+  }
 
   if (!filtered.length) {
     container.innerHTML = '<div class="empty-state">Keine Fragen für diesen Filter.</div>';
@@ -378,6 +451,7 @@ function quizAction(act, id) {
     actDiv.querySelectorAll('[data-act]').forEach(b => {
       b.onclick = () => quizAction(b.dataset.act, b.dataset.id);
     });
+    saveProgress();
     updateScore();
   } else {
     state.quizStats.revealed[id] = act;
@@ -388,6 +462,7 @@ function quizAction(act, id) {
     actDiv.innerHTML = act === 'correct'
       ? '<span class="quiz-done-tag correct">✓ Gewusst</span>'
       : '<span class="quiz-done-tag wrong">✗ Nicht gewusst</span>';
+    saveProgress();
     updateScore();
   }
 }
@@ -410,7 +485,7 @@ function setScore(type, val) {
 }
 
 function updateProgress(total) {
-  const filtered = state.quizdata.questions.filter(q =>
+  const filtered = state.shuffledQuestions.filter(q =>
     state.quizFilter === 'all' || String(q.level) === state.quizFilter);
   const done = filtered.filter(q => state.quizStats.revealed[q.id]).length;
   const pct = total > 0 ? Math.round(done / total * 100) : 0;
@@ -440,7 +515,6 @@ function buildDrills() {
     };
   });
 
-  // Checklisten
   const wrap = document.getElementById('checklist-wrap');
   wrap.innerHTML = state.quizdata.checklists.map(cl =>
     '<div class="checklist">' +
