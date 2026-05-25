@@ -14,6 +14,11 @@
     { "id": "q08", "topic": "null-fallen", "level": 1, "question": "Was ist der Unterschied zwischen count(*) und count(Spalte) bei einem LEFT JOIN?", "answer": "count(*) zählt alle Zeilen inkl. NULL-Zeilen → liefert 1 für Datensätze ohne Treffer. count(Spalte) ignoriert NULL → liefert korrekt 0 für Datensätze ohne Treffer." },
     { "id": "q09", "topic": "kraehenfuss", "level": 1, "question": "Was bedeutet das Krähenfuß-Symbol ||< ?", "answer": "(1,n): erster Strich = min=1 (verpflichtend), Krähenfuß = max=n (viele). Der Entitytyp muss teilnehmen und kann beliebig viele Partner haben." },
     { "id": "q10", "topic": "all-some-any", "level": 1, "question": "Rote Teile haben Preise 12, 14, 19. Was liefert >ALL(...) vs. >SOME(...)?", "answer": ">ALL liefert Teile teurer als 19 (größer als ALLE = >MAX). >SOME liefert Teile teurer als 12 (größer als mind. einen = >MIN). Fundamentaler Unterschied!" },
+    { "id": "q19", "topic": "11-beziehungen", "level": 3, "question": "Folgende DDL soll 1:1 implementieren: Restaurant(Nr PK, MitarbeiterNr INT NOT NULL REFERENCES Mitarbeiter). Finde ALLE Fehler.", "answer": "Fehler: fehlendes UNIQUE. Ohne UNIQUE können mehrere Restaurants denselben Mitarbeiter referenzieren → technisch 1:n, nicht 1:1. Korrekt: MitarbeiterNr INT NOT NULL UNIQUE REFERENCES Mitarbeiter" },
+    { "id": "q20", "topic": "null-fallen", "level": 3, "question": "Erkläre warum NOT IN bei NULL-haltiger Unterabfrage immer leer ist. Beziehe dich auf die Drei-Werte-Logik.", "answer": "NOT IN expandiert zu: x<>A AND x<>B AND x<>NULL. x<>NULL = UNKNOWN (Drei-Werte-Logik). TRUE AND UNKNOWN = UNKNOWN. WHERE lässt nur TRUE durch → kein Datensatz. NOT EXISTS prüft Existenz, keine Wertgleichheit → kein Problem." },
+    { "id": "q21", "topic": "all-some-any", "level": 3, "question": "Blaue Teile haben Preise 17 und 25. Was liefert: WHERE preis > SOME (SELECT preis FROM t WHERE farbe=blau)?", "answer": "Schritt 1: Unterabfrage → {17, 25}. Schritt 2: >SOME = größer als mind. einen = >MIN(17,25) = >17. Schritt 3: Alle Teile mit preis > 17. Teile mit genau 17 nicht (strikt >)." },
+    { "id": "q22", "topic": "mehrwertige-beziehungen", "level": 3, "question": "Warum reichen drei binäre Beziehungen NICHT als Ersatz für den ternären Beziehungstyp unterrichtet(Klasse, Lehrer, Fach)?", "answer": "'Lehrer unterrichtet Klasse' + 'Lehrer lehrt Fach' + 'Klasse hat Fach' kann nicht aussagen, OB Lehrer A die Klasse X IN Fach M unterrichtet. Die Dreier-Kombination geht verloren. Genau das speichert der ternäre Beziehungstyp." },
+    { "id": "q23", "topic": "erd-tabellen", "level": 3, "question": "Warum braucht Vorstellung im Kino-ERD einen expliziten FOREIGN KEY-Block statt 'references Saal'?", "answer": "Weil der PK von Saal aus zwei Spalten besteht (KinoNr, SaalNr). Ein einfaches 'references Saal' kann nicht ausdrücken, welche Spalten auf welchen Teil des zusammengesetzten PKs zeigen. Nötig: FOREIGN KEY (KinoNr, SaalNr) REFERENCES Saal(KinoNr, SaalNr)." },
     { "id": "q11", "topic": "beziehungstypen", "level": 2, "question": "Gegeben: [Mitarbeiter]---(0,1)---leitet---(1,1)---[Restaurant]. Bestimme: Beziehungstyp, FK-Seite, NOT NULL, UNIQUE.", "answer": "Beziehungstyp: beide max=1 → 1:1. FK in Restaurant (vollständige Seite, min=1). NOT NULL (min_Restaurant=1). UNIQUE (weil 1:1). → Restaurant(Nr PK, MitarbeiterNr FK NOT NULL UNIQUE)" },
     { "id": "q12", "topic": "1n-beziehungen", "level": 2, "question": "Welche 3 Aussagen zu [A]---(1,n)---ab---(0,1)---[B] sind korrekt? (a) m:n (b) A nimmt vollständig teil (c) FK in A (d) A ist n-Seite (e) FK nullable (f) FK NOT NULL", "answer": "(b), (d), (e) sind korrekt. (b): A hat min=1 → vollständig. (d): A hat max=n → n-Seite. (e): FK in B, min_B=0 → nullable. Fehler: (a) 1:n nicht m:n. (c) FK in B. (f) min_B=0 → nullable." },
     { "id": "q13", "topic": "abhaengige-entitytypen", "level": 2, "question": "Erkläre, warum Saal im Kino-ERD ein abhängiger Entitytyp ist. Schreibe die DDL.", "answer": "SaalNr allein nicht eindeutig (Saal 1 gibt es in jedem Kino). Erst (KinoNr, SaalNr) eindeutig. KinoNr = FK + Teil des PK.\n\nCREATE TABLE Saal (\n  KinoNr INTEGER NOT NULL REFERENCES Kino,\n  SaalNr INTEGER NOT NULL,\n  PRIMARY KEY (KinoNr, SaalNr)\n);" },
@@ -22,11 +27,6 @@
     { "id": "q16", "topic": "mengenoperationen", "level": 2, "question": "Schreibe SQL für: Lieferanten die T1 liefern aber NICHT T2. Welcher Operator?", "answer": "EXCEPT:\n(SELECT lnr FROM lt WHERE tnr=T1)\nEXCEPT\n(SELECT lnr FROM lt WHERE tnr=T2);\n\nAchtung: Reihenfolge entscheidend! T1-Menge EXCEPT T2-Menge, nicht umgekehrt." },
     { "id": "q17", "topic": "outer-join", "level": 2, "question": "Schreibe SQL für: Alle Teile, die NOCH NIE geliefert wurden. Verwende LEFT JOIN.", "answer": "SELECT t.tnr, t.tname\nFROM t\nLEFT JOIN lt ON t.tnr = lt.tnr\nWHERE lt.tnr IS NULL;\n\nIS NULL filtert Zeilen ohne Treffer in lt. NICHT: = NULL (immer leer)!" },
     { "id": "q18", "topic": "erd-rekonstruieren", "level": 2, "question": "Gegeben: Angestellter(SVN PK) | Filiale(FilialNr PK, LeiterSVN FK→Angestellter NOT NULL UNIQUE). Rekonstruiere das ERD.", "answer": "[Angestellter]---(?,1)---leitet---(1,1)---[Filiale]. UNIQUE → 1:1. NOT NULL → Filiale vollständig (min=1). Angestellter-min: NICHT ableitbar (→ wahrscheinlich 0, aber Fragezeichen korrekt)." },
-    { "id": "q19", "topic": "11-beziehungen", "level": 3, "question": "Folgende DDL soll 1:1 implementieren: Restaurant(Nr PK, MitarbeiterNr INT NOT NULL REFERENCES Mitarbeiter). Finde ALLE Fehler.", "answer": "Fehler: fehlendes UNIQUE. Ohne UNIQUE können mehrere Restaurants denselben Mitarbeiter referenzieren → technisch 1:n, nicht 1:1. Korrekt: MitarbeiterNr INT NOT NULL UNIQUE REFERENCES Mitarbeiter" },
-    { "id": "q20", "topic": "null-fallen", "level": 3, "question": "Erkläre warum NOT IN bei NULL-haltiger Unterabfrage immer leer ist. Beziehe dich auf die Drei-Werte-Logik.", "answer": "NOT IN expandiert zu: x<>A AND x<>B AND x<>NULL. x<>NULL = UNKNOWN (Drei-Werte-Logik). TRUE AND UNKNOWN = UNKNOWN. WHERE lässt nur TRUE durch → kein Datensatz. NOT EXISTS prüft Existenz, keine Wertgleichheit → kein Problem." },
-    { "id": "q21", "topic": "all-some-any", "level": 3, "question": "Blaue Teile haben Preise 17 und 25. Was liefert: WHERE preis > SOME (SELECT preis FROM t WHERE farbe=blau)?", "answer": "Schritt 1: Unterabfrage → {17, 25}. Schritt 2: >SOME = größer als mind. einen = >MIN(17,25) = >17. Schritt 3: Alle Teile mit preis > 17. Teile mit genau 17 nicht (strikt >)." },
-    { "id": "q22", "topic": "mehrwertige-beziehungen", "level": 3, "question": "Warum reichen drei binäre Beziehungen NICHT als Ersatz für den ternären Beziehungstyp unterrichtet(Klasse, Lehrer, Fach)?", "answer": "'Lehrer unterrichtet Klasse' + 'Lehrer lehrt Fach' + 'Klasse hat Fach' kann nicht aussagen, OB Lehrer A die Klasse X IN Fach M unterrichtet. Die Dreier-Kombination geht verloren. Genau das speichert der ternäre Beziehungstyp." },
-    { "id": "q23", "topic": "erd-tabellen", "level": 3, "question": "Warum braucht Vorstellung im Kino-ERD einen expliziten FOREIGN KEY-Block statt 'references Saal'?", "answer": "Weil der PK von Saal aus zwei Spalten besteht (KinoNr, SaalNr). Ein einfaches 'references Saal' kann nicht ausdrücken, welche Spalten auf welchen Teil des zusammengesetzten PKs zeigen. Nötig: FOREIGN KEY (KinoNr, SaalNr) REFERENCES Saal(KinoNr, SaalNr)." },
     { "id": "q24", "topic": "umwandlung", "level": 2, "question": "Wandle [Produkt](1,1)---gehört zu---(0,n)[Kategorie] in Krähenfußnotation um.", "answer": "Produkt (1,1) → ||. Kategorie (0,n) → o<. Ergebnis: Kategorie ||----o< Produkt. Das || steht bei Kategorie (jedes Produkt gehört zu genau einer), das o< bei Produkt (eine Kategorie hat 0 bis viele)." }
   ],
   "drills": [
@@ -68,6 +68,201 @@
         "LEFT JOIN + count: count(Spalte) statt count(*)?",
         "NULL-Vergleich: IS NULL statt = NULL?"
       ]
+    }
+  ],
+  "auswertung": {
+    "noten": [
+      { "min": 90, "note": "1", "label": "Ausgezeichnet", "farbe": "#3eb8a0", "text": "Du beherrschst den Stoff auf 1er-Niveau. Weiter so!" },
+      { "min": 75, "note": "2", "label": "Gut", "farbe": "#7c9ef0", "text": "Sehr solide. Wiederhole die falsch beantworteten Level-3-Fragen." },
+      { "min": 60, "note": "3", "label": "Befriedigend", "farbe": "#f0a040", "text": "Level 1 und 2 sitzen. Für eine bessere Note Level-3-Fragen wiederholen." },
+      { "min": 45, "note": "4", "label": "Genügend", "farbe": "#f0c040", "text": "Level-1-Stoff nochmals festigen, dann Level 2 angehen." },
+      { "min": 0,  "note": "5", "label": "Nicht Genügend", "farbe": "#e05c5c", "text": "Fang mit den Level-1-Fragen nochmals von vorne an. Du schaffst das!" }
+    ]
+  },
+  "schritte": [
+    {
+      "id": "s01",
+      "nr": 1,
+      "titel": "ERD lesen — Kardinalitäten bestimmen",
+      "kategorie": "ERD",
+      "beschreibung": "Bevor irgendetwas implementiert wird, muss das ERD korrekt gelesen werden. Das ist die Grundlage für alles.",
+      "schritte": [
+        "Schaue dir jede Beziehung an und lese die (min,max)-Paare.",
+        "Bestimme den Beziehungstyp NUR aus den max-Werten: beide max=1 → 1:1 | ein max=n → 1:n | beide max=n → m:n.",
+        "Bestimme für jede Seite die Optionalität: min=0 → optional (FK NULL) | min=1 → verpflichtend (NOT NULL).",
+        "Merke: Das Wertepaar steht NEBEN dem Entitytyp, den es beschreibt — nicht auf der anderen Seite."
+      ],
+      "merksatz": "Beziehungstyp = nur max! NULL = min der FK-Seite!"
+    },
+    {
+      "id": "s02",
+      "nr": 2,
+      "titel": "Beziehungstyp → Implementierungsstrategie wählen",
+      "kategorie": "ERD",
+      "beschreibung": "Jeder Beziehungstyp hat eine klare Umsetzungsregel. Diese drei Regeln auswendig können.",
+      "schritte": [
+        "1:1 → FK in die vollständig teilnehmende Seite + UNIQUE-Constraint + NOT NULL oder nullable je nach min.",
+        "1:n → FK in die Tabelle mit max=1 (die '1-Seite') + KEIN UNIQUE + NOT NULL/nullable je nach min der FK-Seite.",
+        "m:n → eigene Zwischentabelle + PK = FK_A + FK_B (zusammengesetzt) + Beziehungsattribute als extra Spalten.",
+        "Abhängiger Entitytyp → FK ist Teil des PKs (PK/FK). Der FK steht als erste Spalte."
+      ],
+      "merksatz": "1:1→FK+UNIQUE | 1:n→FK auf max=1, kein UNIQUE | m:n→Zwischentabelle"
+    },
+    {
+      "id": "s03",
+      "nr": 3,
+      "titel": "Erstellungsreihenfolge bestimmen",
+      "kategorie": "Implementierung",
+      "beschreibung": "Eine Tabelle mit FK kann erst nach der referenzierten Tabelle erstellt werden. Die Reihenfolge ist nicht optional.",
+      "schritte": [
+        "Schritt 1: Alle Tabellen ohne FKs zuerst (starke Entitytypen, z.B. Kino, l, t).",
+        "Schritt 2: Tabellen mit einfachen FKs (z.B. Angestellter mit AbtNr-FK auf Abteilung).",
+        "Schritt 3: Abhängige Entitytypen (z.B. Saal nach Kino).",
+        "Schritt 4: Zwischentabellen ganz am Ende (z.B. lt nach l und t, geeignet nach kurs und referent).",
+        "Bei mehrstufiger Abhängigkeit: zusammengesetzten FOREIGN KEY-Block verwenden (nicht nur references)."
+      ],
+      "merksatz": "Starke → Abhängige → FK-Tabellen → Zwischentabellen"
+    },
+    {
+      "id": "s04",
+      "nr": 4,
+      "titel": "DDL schreiben — Checkliste pro Tabelle",
+      "kategorie": "Implementierung",
+      "beschreibung": "Für jede Tabelle diese vier Punkte der Reihe nach abarbeiten.",
+      "schritte": [
+        "1) PK: PRIMARY KEY setzen (einfach oder zusammengesetzt).",
+        "2) FKs: REFERENCES auf die richtige Tabelle. NOT NULL oder nullable je nach min der FK-Seite.",
+        "3) UNIQUE: Nur bei 1:1. Bei 1:n niemals UNIQUE.",
+        "4) Beziehungsattribute: Extra-Spalten in der Zwischentabelle, KEIN PK-Teil.",
+        "Kontrollfrage vor Abgabe: 1:1? → UNIQUE da? | 1:n? → kein UNIQUE? | NULL aus min der FK-Seite?"
+      ],
+      "merksatz": "PK → FKs (NOT NULL?) → UNIQUE nur 1:1 → Beziehungsattribute"
+    },
+    {
+      "id": "s05",
+      "nr": 5,
+      "titel": "Unterabfragen schreiben — Sicherheitschecks",
+      "kategorie": "SQL",
+      "beschreibung": "Jede Unterabfrage muss auf drei Punkte geprüft werden, bevor sie abgegeben wird.",
+      "schritte": [
+        "Check 1 — Rückgabewerte: Ist der Operator =, >, <? Dann darf die Unterabfrage NUR EINEN Wert zurückgeben. Fix: max(), min() oder ALL/SOME.",
+        "Check 2 — AND auf derselben Spalte: 'where tnr=T1 and tnr=T2' → immer leer! Fix: zwei separate Unterabfragen mit AND.",
+        "Check 3 — Korrelation: Verwendet die innere Abfrage einen Wert von außen (z.B. l.lnr)? Dann ist sie korreliert und wird für jede Zeile neu ausgeführt.",
+        "Check 4 — NULL bei NOT IN: Kann die Unterabfrage NULL liefern? Dann NOT EXISTS statt NOT IN verwenden."
+      ],
+      "merksatz": "=/>/<: 1 Wert! | AND selbe Spalte: 2 Unterabfragen! | NOT IN+NULL: NOT EXISTS!"
+    },
+    {
+      "id": "s06",
+      "nr": 6,
+      "titel": "ALL, SOME, ANY richtig einsetzen",
+      "kategorie": "SQL",
+      "beschreibung": "Die zwei wichtigsten Regeln für ALL und SOME.",
+      "schritte": [
+        "> ALL bedeutet 'größer als ALLE Werte' = entspricht > MAX. Beispiel: rote Preise 12,14,19 → > ALL liefert alles teurer als 19.",
+        "> SOME (= > ANY) bedeutet 'größer als MINDESTENS EINEN' = entspricht > MIN. Beispiel: > SOME liefert alles teurer als 12.",
+        "Der Unterschied ist fundamental: > ALL liefert wenige Ergebnisse, > SOME liefert viele.",
+        "= SOME entspricht IN. <> ALL entspricht NOT IN.",
+        "ANY und SOME sind Synonyme — immer austauschbar."
+      ],
+      "merksatz": ">ALL ~ >MAX (wenige) | >SOME ~ >MIN (viele) | ANY=SOME"
+    },
+    {
+      "id": "s07",
+      "nr": 7,
+      "titel": "IN, EXISTS, NOT EXISTS korrekt verwenden",
+      "kategorie": "SQL",
+      "beschreibung": "Welcher Operator für welchen Anwendungsfall.",
+      "schritte": [
+        "IN: Wert in Menge. Meist nicht korreliert. Für 'hat X geliefert': lnr IN (select lnr from lt where tnr='T1').",
+        "EXISTS: Existenzprüfung, fast immer korreliert. MUSS Korrelationsverweis haben (lt.lnr = l.lnr), sonst gibt es ALLES zurück.",
+        "NOT EXISTS: 'hat nie'. Sicher bei NULL — keine NULL-Falle wie NOT IN.",
+        "T1 UND T2: zwei separate IN/EXISTS mit AND. NIEMALS: where tnr='T1' AND tnr='T2' (immer leer!).",
+        "NOT IN: Vorsicht wenn Unterabfrage NULL zurückgeben kann → leeres Ergebnis wegen UNKNOWN."
+      ],
+      "merksatz": "IN: Menge | EXISTS: korreliert! | NOT EXISTS: sicher | T1+T2: zwei Unterabfragen!"
+    },
+    {
+      "id": "s08",
+      "nr": 8,
+      "titel": "OUTER JOIN und IS NULL",
+      "kategorie": "SQL",
+      "beschreibung": "Das Standardmuster für 'alle anzeigen, auch ohne Partner'.",
+      "schritte": [
+        "LEFT JOIN behält ALLE linken Zeilen. Fehlende rechte Treffer werden mit NULL aufgefüllt.",
+        "INNER JOIN lässt Zeilen ohne Partner weg — falsch, wenn 'alle anzeigen' gefordert.",
+        "Fehlende finden: LEFT JOIN + WHERE rechte_Schlüsselspalte IS NULL.",
+        "Aggregation: count(rechte_Spalte) statt count(*) — count(*) gibt 1 statt 0 für Zeilen ohne Treffer.",
+        "= NULL ist IMMER FALSCH. Immer IS NULL verwenden."
+      ],
+      "merksatz": "LEFT JOIN + IS NULL = fehlende finden | count(Spalte) nicht count(*)"
+    },
+    {
+      "id": "s09",
+      "nr": 9,
+      "titel": "Mengenoperationen richtig einsetzen",
+      "kategorie": "SQL",
+      "beschreibung": "Vier Operatoren, vier Anwendungsfälle.",
+      "schritte": [
+        "UNION: A ODER B, Duplikate werden entfernt.",
+        "UNION ALL: A ODER B, Duplikate bleiben.",
+        "INTERSECT: A UND B (= doppeltes IN).",
+        "EXCEPT: A MINUS B — Reihenfolge entscheidend! A EXCEPT B ≠ B EXCEPT A.",
+        "Voraussetzung: beide Abfragen müssen gleiche Spaltenanzahl haben.",
+        "ORDER BY nur einmal am Ende der gesamten Abfrage, nicht in Teilabfragen."
+      ],
+      "merksatz": "UNION=oder | INTERSECT=und | EXCEPT=minus(Reihenfolge!) | gleiche Spaltenanzahl!"
+    },
+    {
+      "id": "s10",
+      "nr": 10,
+      "titel": "NULL-Fallen erkennen und vermeiden",
+      "kategorie": "SQL",
+      "beschreibung": "Die vier häufigsten NULL-Fehler.",
+      "schritte": [
+        "Falle 1: = NULL → immer UNKNOWN, niemals TRUE. Immer IS NULL verwenden.",
+        "Falle 2: count(*) bei LEFT JOIN → zählt NULL-Zeilen, gibt 1 statt 0. count(Spalte) verwenden.",
+        "Falle 3: NOT IN + NULL in Unterabfrage → leeres Ergebnis (UNKNOWN). NOT EXISTS verwenden.",
+        "Falle 4: NULL ≠ leer ('') ≠ 0. Alle drei sind verschieden.",
+        "Drei-Werte-Logik: TRUE / FALSE / UNKNOWN. WHERE lässt nur TRUE durch."
+      ],
+      "merksatz": "=NULL: FALSCH | IS NULL: korrekt | count(Spalte) nicht count(*) | NOT EXISTS statt NOT IN"
+    },
+    {
+      "id": "s11",
+      "nr": 11,
+      "titel": "ERD aus logischem Modell rekonstruieren",
+      "kategorie": "ERD",
+      "beschreibung": "Die Ablese-Regeln für den Rückweg von Tabellen zum ERD.",
+      "schritte": [
+        "FK ohne UNIQUE → 1:n. Die Tabelle mit FK ist die Seite mit max=1.",
+        "FK mit UNIQUE → 1:1.",
+        "PK = FK_A + FK_B (nur FKs) → m:n-Zwischentabelle.",
+        "PK = FK + Teilschlüssel → abhängiger Entitytyp.",
+        "NOT NULL → min=1 auf FK-Seite. Nullable → min=0.",
+        "GRENZE: min der Nicht-FK-Seite ist NICHT ableitbar → Fragezeichen setzen ist korrekt."
+      ],
+      "merksatz": "FK+UNIQUE=1:1 | FK ohne UNIQUE=1:n | PK=FKs=m:n | PK=FK+Teil=abhängig"
+    },
+    {
+      "id": "s12",
+      "nr": 12,
+      "titel": "Die 10 häufigsten Fehler — finale Kontrolle",
+      "kategorie": "Wiederholung",
+      "beschreibung": "Diese Checkliste nach jeder Aufgabe durchgehen, bevor man weitermacht.",
+      "schritte": [
+        "1:1 ohne UNIQUE → UNIQUE hinzufügen.",
+        "NOT NULL aus falschem min → min der FK-Seite lesen.",
+        "FK auf falsche Seite → FK in max=1-Seite.",
+        "UNIQUE bei 1:n → entfernen.",
+        "(1,1) = abhängiger Entitytyp → FALSCH: abhängig = FK im PK.",
+        "Mehrfachwert bei Unterabfrage → MAX() / ALL / SOME.",
+        "AND auf selber Spalte → zwei Unterabfragen.",
+        "EXCEPT-Richtung vertauscht → erste Abfrage = Basis.",
+        "count(*) bei LEFT JOIN → count(Spalte).",
+        "= NULL → IS NULL."
+      ],
+      "merksatz": "Drei ERD-Fragen: 1:1?→UNIQUE | FK auf max=1? | NOT NULL→min der FK-Seite?"
     }
   ]
 }

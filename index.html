@@ -13,9 +13,7 @@
   <!-- Header -->
   <header id="header">
     <button id="hamburger" aria-label="Menü öffnen">
-      <span></span>
-      <span></span>
-      <span></span>
+      <span></span><span></span><span></span>
     </button>
     <div class="header-logo" id="header-logo">DBI_1</div>
     <div class="header-title" id="header-title">Lernhub</div>
@@ -23,12 +21,26 @@
     <div class="header-spacer"></div>
     <nav class="header-nav">
       <button class="nav-btn" data-view="home">Themen</button>
+      <button class="nav-btn" data-view="schritte">Schritte</button>
       <button class="nav-btn" data-view="sql">SQL</button>
       <button class="nav-btn" data-view="testanalyse">Testanalyse</button>
       <button class="nav-btn" data-view="quiz">Quiz</button>
       <button class="nav-btn" data-view="drills">Drills</button>
     </nav>
   </header>
+
+  <!-- Mobile Nav Drawer -->
+  <nav id="mobile-nav">
+    <button class="nav-btn" data-view="home">📚 Themen</button>
+    <button class="nav-btn" data-view="schritte">📋 Schritte</button>
+    <button class="nav-btn" data-view="sql">🗄️ SQL</button>
+    <button class="nav-btn" data-view="testanalyse">📋 Testanalyse</button>
+    <button class="nav-btn" data-view="quiz">❓ Quiz</button>
+    <button class="nav-btn" data-view="drills">🎯 Drills</button>
+  </nav>
+
+  <!-- Overlay -->
+  <div id="overlay"></div>
 
   <!-- Sidebar -->
   <aside id="sidebar"></aside>
@@ -72,6 +84,16 @@
         <h3>⚡ Mini-Cheatsheet</h3>
         <pre id="topic-cheatsheet"></pre>
       </div>
+    </section>
+
+    <!-- View: Schritte -->
+    <section id="view-schritte" class="view">
+      <div class="page-head">
+        <h1>📋 Schritt-für-Schritt-Anleitung</h1>
+        <p>Die 12 Schritte, die man auswendig können muss, um den Test zu bestehen. Klick zum Aufklappen.</p>
+      </div>
+      <div class="schritte-filter" id="schritte-filter"></div>
+      <div id="schritte-list"></div>
     </section>
 
     <!-- View: SQL -->
@@ -136,17 +158,18 @@
   </main>
 </div>
 
-<!-- Mobile Nav Drawer -->
-<nav id="mobile-nav">
-  <button class="nav-btn" data-view="home">Themen</button>
-  <button class="nav-btn" data-view="sql">SQL</button>
-  <button class="nav-btn" data-view="testanalyse">Testanalyse</button>
-  <button class="nav-btn" data-view="quiz">Quiz</button>
-  <button class="nav-btn" data-view="drills">Drills</button>
-</nav>
-
-<!-- Overlay -->
-<div id="overlay"></div>
+<!-- Quiz Auswertungs-Overlay -->
+<div id="quiz-overlay" class="quiz-overlay" style="display:none">
+  <div class="quiz-overlay-box">
+    <div class="quiz-overlay-icon" id="overlay-icon">🎓</div>
+    <div class="quiz-overlay-note" id="overlay-note"></div>
+    <div class="quiz-overlay-label" id="overlay-label"></div>
+    <div class="quiz-overlay-score" id="overlay-score"></div>
+    <div class="quiz-overlay-text" id="overlay-text"></div>
+    <div class="quiz-overlay-breakdown" id="overlay-breakdown"></div>
+    <button class="btn btn-reveal" id="overlay-close">Quiz neu starten</button>
+  </div>
+</div>
 
 <script src="script.js"></script>
 </body>
