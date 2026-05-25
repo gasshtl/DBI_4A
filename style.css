@@ -129,6 +129,46 @@ body {
 #hamburger.open span:nth-child(2) { opacity: 0; }
 #hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* ── Sidebar Toggle Button ───────────────────────────────── */
+#sidebar-toggle {
+  display: none;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+#sidebar-toggle:hover { border-color: var(--accent); }
+#sidebar-toggle.open { border-color: var(--accent); background: rgba(240,192,64,0.1); }
+
+/* ── Mobile Sidebar Drawer ───────────────────────────────── */
+#mobile-sidebar {
+  display: none;
+  position: fixed;
+  top: 60px;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  z-index: 200;
+  overflow-y: auto;
+  padding: 12px 0;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.4);
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+}
+#mobile-sidebar.open {
+  display: block;
+  transform: translateX(0);
+}
+
 /* ── Mobile Nav Drawer ───────────────────────────────────── */
 #mobile-nav {
   display: none;
@@ -942,6 +982,7 @@ code {
   }
   #sidebar { display: none; }
   #hamburger { display: flex; }
+  #sidebar-toggle { display: flex; }
   #main { padding: 16px; }
   .header-nav { display: none; }
   .header-badge { display: none; }

@@ -86,22 +86,38 @@ function applyMeta() {
 function setupHamburger() {
   const btn = document.getElementById('hamburger');
   const nav = document.getElementById('mobile-nav');
+  const sideBtn = document.getElementById('sidebar-toggle');
+  const sideDrawer = document.getElementById('mobile-sidebar');
   const overlay = document.getElementById('overlay');
   if (!btn || !nav || !overlay) return;
 
-  function closeMenu() {
+  function closeAll() {
     btn.classList.remove('open');
     nav.classList.remove('open');
     overlay.classList.remove('open');
+    if (sideBtn) sideBtn.classList.remove('open');
+    if (sideDrawer) sideDrawer.classList.remove('open');
   }
 
+  // Nav-Hamburger
   btn.addEventListener('click', () => {
     const isOpen = nav.classList.contains('open');
-    isOpen ? closeMenu() : (btn.classList.add('open'), nav.classList.add('open'), overlay.classList.add('open'));
+    closeAll();
+    if (!isOpen) { btn.classList.add('open'); nav.classList.add('open'); overlay.classList.add('open'); }
   });
 
-  overlay.addEventListener('click', closeMenu);
+  // Sidebar-Toggle
+  if (sideBtn && sideDrawer) {
+    sideBtn.addEventListener('click', () => {
+      const isOpen = sideDrawer.classList.contains('open');
+      closeAll();
+      if (!isOpen) { sideBtn.classList.add('open'); sideDrawer.classList.add('open'); overlay.classList.add('open'); }
+    });
+  }
 
+  overlay.addEventListener('click', closeAll);
+
+  // Nav-Buttons (Haupt-Nav)
   nav.querySelectorAll('.nav-btn').forEach(navBtn => {
     navBtn.addEventListener('click', () => {
       const view = navBtn.dataset.view;
@@ -114,9 +130,22 @@ function setupHamburger() {
       showView(view);
       setActiveNav(view);
       setActiveSidebar(null);
-      closeMenu();
+      closeAll();
     });
   });
+
+  // Browser Zurück-Button → Startseite
+  window.addEventListener('popstate', () => {
+    buildHome();
+    showView('home');
+    setActiveNav('home');
+    setActiveSidebar(null);
+  });
+  // State pushen wenn Topic geöffnet wird (siehe openTopic)
+}
+
+function pushHistoryState() {
+  history.pushState({ view: 'topic' }, '', window.location.pathname);
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
@@ -247,6 +276,8 @@ function openTopic(id) {
   } else { fColl.innerHTML = ''; }
   document.getElementById('topic-cheatsheet').innerHTML = highlightCheatsheet(topic.cheatsheet);
   showView('topic');
+  pushHistoryState();
+  rebuildMobileSidebar();
 }
 
 function switchLevel(lvl) {
@@ -299,7 +330,40 @@ function buildSchritte() {
   bindCardToggles(list, '.schritt-card', '.schritt-card-head');
 }
 
-/* ── SQL View ───────────────────────────────────────────── */
+/* ── Mobile Sidebar Drawer ──────────────────────────────── */
+function rebuildMobileSidebar() {
+  const drawer = document.getElementById('mobile-sidebar');
+  if (!drawer) return;
+  drawer.innerHTML = '';
+  const catLabels = {};
+  state.data.categories.forEach(c => catLabels[c.id] = c.label);
+  state.data.categories.forEach(cat => {
+    const topics = state.data.topics.filter(t => t.category === cat.id);
+    if (!topics.length) return;
+    const catLabel = document.createElement('div');
+    catLabel.className = 'sidebar-category';
+    catLabel.textContent = catLabels[cat.id] || cat.id;
+    drawer.appendChild(catLabel);
+    topics.forEach(topic => {
+      const item = document.createElement('div');
+      item.className = 'sidebar-item cat-' + topic.category;
+      item.dataset.id = topic.id;
+      item.innerHTML =
+        '<span class="icon">' + topic.icon + '</span>' +
+        '<span class="label">' + escapeHtml(topic.title) + '</span>' +
+        '<span class="cat-dot"></span>';
+      item.addEventListener('click', () => {
+        document.getElementById('mobile-sidebar').classList.remove('open');
+        document.getElementById('sidebar-toggle').classList.remove('open');
+        document.getElementById('overlay').classList.remove('open');
+        openTopic(topic.id);
+      });
+      drawer.appendChild(item);
+    });
+  });
+}
+
+
 function buildSql() {
   document.getElementById('sql-title').textContent = state.sqldata.meta.title;
   document.getElementById('sql-subtitle').textContent = state.sqldata.meta.beschreibung;
