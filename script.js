@@ -59,6 +59,7 @@ async function init() {
 
     applyMeta();
     buildSidebar();
+    rebuildMobileSidebar();
     buildHome();
     setupNav();
     setupHamburger();
